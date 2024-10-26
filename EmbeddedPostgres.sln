@@ -1,0 +1,60 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.11.35312.102
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EmbeddedPostgres.Core", "src\EmbeddedPostgres.Core\EmbeddedPostgres.Core.csproj", "{80085761-386E-4532-AA5D-706620CE46DC}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EmbeddedPostgres.Cli", "src\EmbeddedPostgres.Cli\EmbeddedPostgres.Cli.csproj", "{5E984FD5-9B13-48E5-BA5C-9A1A6804FC57}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Src", "Src", "{08318310-3851-440C-A3E7-D868639A46B5}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{04D97F82-3D90-41CD-A4C4-4C57AD39E0D6}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EmbeddedPostgres.Tests", "tests\EmbeddedPostgres.Tests\EmbeddedPostgres.Tests.csproj", "{61004EAC-8EA2-4B2A-B4A7-34E31E5EDD61}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EmbeddedPostgres", "src\EmbeddedPostgres\EmbeddedPostgres.csproj", "{C63F4BB1-529C-4065-B9C0-F97F37177516}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EmbeddedPostgres.Core.Tests", "tests\EmbeddedPostgres.Core.Tests\EmbeddedPostgres.Core.Tests.csproj", "{D8A81446-36A9-47AE-B270-361F65BD2C6D}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{80085761-386E-4532-AA5D-706620CE46DC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{80085761-386E-4532-AA5D-706620CE46DC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{80085761-386E-4532-AA5D-706620CE46DC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{80085761-386E-4532-AA5D-706620CE46DC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5E984FD5-9B13-48E5-BA5C-9A1A6804FC57}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5E984FD5-9B13-48E5-BA5C-9A1A6804FC57}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5E984FD5-9B13-48E5-BA5C-9A1A6804FC57}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5E984FD5-9B13-48E5-BA5C-9A1A6804FC57}.Release|Any CPU.Build.0 = Release|Any CPU
+		{61004EAC-8EA2-4B2A-B4A7-34E31E5EDD61}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{61004EAC-8EA2-4B2A-B4A7-34E31E5EDD61}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{61004EAC-8EA2-4B2A-B4A7-34E31E5EDD61}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{61004EAC-8EA2-4B2A-B4A7-34E31E5EDD61}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C63F4BB1-529C-4065-B9C0-F97F37177516}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C63F4BB1-529C-4065-B9C0-F97F37177516}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C63F4BB1-529C-4065-B9C0-F97F37177516}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C63F4BB1-529C-4065-B9C0-F97F37177516}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D8A81446-36A9-47AE-B270-361F65BD2C6D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D8A81446-36A9-47AE-B270-361F65BD2C6D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D8A81446-36A9-47AE-B270-361F65BD2C6D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D8A81446-36A9-47AE-B270-361F65BD2C6D}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{80085761-386E-4532-AA5D-706620CE46DC} = {08318310-3851-440C-A3E7-D868639A46B5}
+		{5E984FD5-9B13-48E5-BA5C-9A1A6804FC57} = {08318310-3851-440C-A3E7-D868639A46B5}
+		{61004EAC-8EA2-4B2A-B4A7-34E31E5EDD61} = {04D97F82-3D90-41CD-A4C4-4C57AD39E0D6}
+		{C63F4BB1-529C-4065-B9C0-F97F37177516} = {08318310-3851-440C-A3E7-D868639A46B5}
+		{D8A81446-36A9-47AE-B270-361F65BD2C6D} = {04D97F82-3D90-41CD-A4C4-4C57AD39E0D6}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {7B918296-F47A-4F90-8976-04B2E460E154}
+	EndGlobalSection
+EndGlobal
