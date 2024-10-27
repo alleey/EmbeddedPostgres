@@ -15,10 +15,34 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      repository-projects: write
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Fetch all history for tags
+
+    - name: Read meta data
+      id: metadata
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const { execSync } = require('child_process');
+          let latestTag;
+          try {
+            latestTag = execSync('git describe --abbrev=0 --tags').toString().trim();
+          } catch (error) {
+            console.log('No tags found, using default version 0.0.0.1');
+            console.log(error);
+            latestTag = 'v0.0.0.1';
+          }
+          const version = latestTag.startsWith('v') ? latestTag.substring(1) : latestTag;
+          console.log(`Tag:${latestTag} -> Version:${version}`);
+          core.setOutput('value', version)
 
     - name: Setup .NET
       uses: actions/setup-dotnet@v3
@@ -26,7 +50,7 @@ jobs:
         dotnet-version: '8.x'
 
     - name: Run Pack
-      run: dotnet pack EmbeddedPostgres.sln -c Release
+      run: dotnet pack EmbeddedPostgres.sln -c Release -p:AssemblyVersion=${{ steps.metadata.outputs.value }} -p:FileVersion=${{ steps.metadata.outputs.value }}
 
     - name: Publish to NuGet
       run: |
@@ -37,11 +61,11 @@ jobs:
     - name: Attach EmbeddedPostgres.Core
       uses: actions/upload-artifact@v4
       with:
-        name: EmbeddedPostgres.Core-${{ github.ref_name }}-${{ github.sha }}
+        name: EmbeddedPostgres.Core-v${{ steps.metadata.outputs.value }}
         path: src/EmbeddedPostgres.Core/bin/Release/net8.0
 
     - name: Attach EmbeddedPostgres
       uses: actions/upload-artifact@v4
       with:
-        name: EmbeddedPostgres-${{ github.ref_name }}-${{ github.sha }}
+        name: EmbeddedPostgres-v${{ steps.metadata.outputs.value }}
         path: src/EmbeddedPostgres/bin/Release/net8.0

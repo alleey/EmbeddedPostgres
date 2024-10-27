@@ -9,9 +9,10 @@
     <PackAsTool>False</PackAsTool>
     <AssemblyName>$(MSBuildProjectName)</AssemblyName>
     <PackageId>EmbeddedPostgres</PackageId>
-    <PackageTags>postgres;postgresql;pg;embed;embedded;server;.net 4.6;net 4.6;net46;.net core;net core;netcore;netcore 2.0;netcore rtm</PackageTags>
-    <PackageProjectUrl></PackageProjectUrl>
-    <PackageLicenseUrl>https://github.com/alleey/EmbeddedPostgres/blob/master/LICENSE</PackageLicenseUrl>
+    <PackageTags>postgres;postgresql;pg;embed;embedded;server;.net 8;net 8.0;.net core;.net;</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageProjectUrl>https://github.com/alleey/EmbeddedPostgres</PackageProjectUrl>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/alleey/EmbeddedPostgres</RepositoryUrl>
     <ProduceReferenceAssembly>False</ProduceReferenceAssembly>
     <EnforceCodeStyleInBuild>True</EnforceCodeStyleInBuild>

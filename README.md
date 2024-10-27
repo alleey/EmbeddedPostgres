@@ -50,6 +50,41 @@ await pgServerBuilder.DestroyAsync(pgServer, PgShutdownParams.Fast);
 ```
 
 
+### Example of passing additional server parameters
+```csharp
+PgServer pgServer = new PgServer(
+    await pgServerBuilder.BuildAsync(builder =>
+    {
+        builder.CacheDirectory = "downloads";
+        builder.InstanceDirectory = "CreateServerWithAdditionalServerParameters";
+        builder.ServerArtifact = PgZonkyioBinaries.Latest(forceDownload: false);
+        builder.CleanInstall = true;
+        builder.AddDataCluster(cluster =>
+        {
+            cluster.UniqueId = "primary";
+            cluster.DataDirectory = "data";
+            cluster.Superuser = PgUser;
+            cluster.Port = Helpers.GetAvailablePort();
+            cluster.AddClusterParameters(new Dictionary<string, string> {
+
+                // set generic query optimizer to off
+                { "geqo", "off" },
+
+                // set timezone as UTC
+                { "timezone", "UTC" },
+
+                // switch off synchronous commit
+                { "synchronous_commit", "off" },
+
+                // set max connections
+                { "max_connections", "4" },
+            });
+        });
+    })
+);
+```
+
+
 ### Example of creating multiple data clusters. Using archive of one cluster to initialize another cluster
 ```csharp
 PgServer pgServer = new PgServer(
@@ -118,28 +153,4 @@ await pgServer.StartAsync(["standby1"], startupParams: PgStartupParams.Default w
 var records = await TestConnection(pgServer, "standby1", "SELECT * FROM books;");
 
 await pgServerBuilder.DestroyAsync(pgServer, PgShutdownParams.Fast);
-```
-
-### Example of passing additional server parameters
-```csharp
-var serverParams = new Dictionary<string, string>();
-
-// set generic query optimizer to off
-serverParams.Add("geqo", "off");
-
-// set timezone as UTC
-serverParams.Add("timezone", "UTC");
-
-// switch off synchronous commit
-serverParams.Add("synchronous_commit", "off");
-
-// set max connections
-serverParams.Add("max_connections", "300");
-
-using (var server = new MysticMind.EmbeddedPostgres.PgServer("15.3.0", pgServerParams: serverParams))
-{
-    server.Start();
-
-    // do operations here
-}
 ```
