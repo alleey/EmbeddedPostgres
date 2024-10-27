@@ -1,0 +1,47 @@
+name: Publish
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*.*.*.*'
+
+env:
+  GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '8.x'
+
+    - name: Run Pack
+      run: dotnet pack src/EmbeddedPostgres.sln -c Release
+
+    - name: Publish to NuGet
+      run: |
+        find . -name 'EmbeddedPostgres.Core*.nupkg' -exec dotnet nuget push "{}" -s https://api.nuget.org/v3/index.json -k ${{ secrets.NUGET_API_KEY }} --skip-duplicate \;
+        find . -name 'EmbeddedPostgres*.nupkg' -exec dotnet nuget push "{}" -s https://api.nuget.org/v3/index.json -k ${{ secrets.NUGET_API_KEY }} --skip-duplicate \;
+      shell: bash
+
+    - name: Attach EmbeddedPostgres.Core
+      uses: actions/upload-artifact@v4
+      with:
+        name: EmbeddedPostgres.Core-${{ github.ref_name }}-${{ github.sha }}
+        path: src/EmbeddedPostgres.Core/bin/Release/net8.0
+
+    - name: Attach EmbeddedPostgres
+      uses: actions/upload-artifact@v4
+      with:
+        name: EmbeddedPostgres-${{ github.ref_name }}-${{ github.sha }}
+        path: src/EmbeddedPostgres/bin/Release/net8.0

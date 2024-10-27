@@ -137,7 +137,7 @@ public class PgServer
     /// <returns>A task that represents the asynchronous initialization operation.</returns>
     public Task InitializeAsync(
         IEnumerable<string> clusters = null,
-        Func<PgDataCluster, IPgInitializationSource> initializer = null,
+        Func<PgDataCluster, IPgClusterInitializer> initializer = null,
         int maxDegreeOfParallelism = 1,
         Func<PgDataClusterInitialzedEvent, CancellationToken, Task> eventListener = null,
         CancellationToken cancellationToken = default)
@@ -146,7 +146,7 @@ public class PgServer
 
         if (initializer == null)
         {
-            initializer = cluster => new PgInitializationSourceFactory(environment).InitializeUsingInitDb(PgInitDbOptions.Default);
+            initializer = cluster => new PgClusterInitializerFactory(environment).InitializeUsingInitDb(PgInitDbOptions.Default);
         }
 
         return SelectDataClusters(clusters).ParallelForEachAsync(
@@ -189,7 +189,7 @@ public class PgServer
     public Task StartAsync(
         IEnumerable<string> clusters = null,
         PgStartupParams startupParams = null,
-        Func<PgDataCluster, IPgInitializationSource> initializer = null,
+        Func<PgDataCluster, IPgClusterInitializer> initializer = null,
         int maxDegreeOfParallelism = 1,
         Func<PgDataClusterStartedEvent, CancellationToken, Task> eventListener = null,
         CancellationToken cancellationToken = default)

@@ -9,11 +9,11 @@ namespace EmbeddedPostgres.Core.Services;
 /// Represents the initialization source for PostgreSQL data clusters using the InitDb process.
 /// This class handles the process of initializing or reinitializing the PostgreSQL data cluster
 /// by interacting with the PgEnvironment and applying the configuration provided in the options.
-/// Implements the <see cref="IPgInitializationSource"/> interface.
+/// Implements the <see cref="IPgClusterInitializer"/> interface.
 /// </summary>
 /// <param name="environment">Provides access to the environment configuration and operations for PostgreSQL clusters.</param>
 /// <param name="options">Specifies options for controlling the initialization behavior, such as forced reinitialization.</param>
-internal class PgInitDbInitializationSource(PgEnvironment environment, PgInitDbOptions options) : IPgInitializationSource
+internal class PgInitDbInitializationSource(PgEnvironment environment, PgInitDbOptions options) : IPgClusterInitializer
 {
     /// <summary>
     /// Asynchronously initializes a PostgreSQL data cluster based on the given configuration.

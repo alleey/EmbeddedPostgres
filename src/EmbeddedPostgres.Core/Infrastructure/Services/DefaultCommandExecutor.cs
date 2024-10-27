@@ -110,11 +110,11 @@ internal class DefaultCommandExecutor : ICommandExecutor
         }
         catch (CommandExecutionException ex)
         {
-            throw new EmbeddedPostgresCommandExecutionException(ex.ExitCode, $"{binaryPath} failed with error [{ex.ExitCode}]: {ex.Message}");
+            throw new PgCommandExecutionException(ex.ExitCode, $"{binaryPath} failed with error [{ex.ExitCode}]: {ex.Message}");
         }
         catch (Exception ex)
         {
-            throw new EmbeddedPostgresCommandExecutionException(-1, $"{binaryPath} failed with error : {ex.Message}");
+            throw new PgCommandExecutionException(-1, $"{binaryPath} failed with error : {ex.Message}");
         }
     }
 }

@@ -173,7 +173,7 @@ public class PgEnvironmentBuilderWindows : IPgEnvironmentBuilder
                     args,
                     cancellationToken: cancellationToken).ConfigureAwait(false);
             }
-            catch (EmbeddedPostgresCommandExecutionException ex)
+            catch (PgCommandExecutionException ex)
             {
                 fileSystem.DeleteFile(sentinel);
                 throw new PgCoreException($"AddLocalUserAccessPermissionAsync: icacls.exe {string.Join(' ', args)} returned an error code {ex.ExitCode}");

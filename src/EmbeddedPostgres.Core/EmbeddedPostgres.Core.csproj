@@ -3,16 +3,15 @@
   <PropertyGroup>
     <Description></Description>
     <Copyright></Copyright>
-    <AssemblyTitle>EmbeddedPostgres</AssemblyTitle>
-    <VersionPrefix>4.0.0</VersionPrefix>
+    <AssemblyTitle>EmbeddedPostgres.Core</AssemblyTitle>
     <Authors>Shoaib Ali</Authors>
     <TargetFrameworks>net8.0</TargetFrameworks>
     <AssemblyName>$(MSBuildProjectName)</AssemblyName>
-    <PackageId>DumbMind.EmbeddedPostgres</PackageId>
+    <PackageId>EmbeddedPostgres.Core</PackageId>
     <PackageTags>postgres;postgresql;pg;embed;embedded;server;.net 4.6;net 4.6;net46;.net core;net core;netcore;netcore 2.0;netcore rtm</PackageTags>
     <PackageProjectUrl></PackageProjectUrl>
-    <PackageLicenseUrl>https://github.com/mysticmind/mysticmind-postgresembed/blob/master/LICENSE</PackageLicenseUrl>
-    <RepositoryUrl>https://github.com/mysticmind/mysticmind-postgresembed</RepositoryUrl>
+    <PackageLicenseUrl>https://github.com/alleey/EmbeddedPostgres/blob/master/LICENSE</PackageLicenseUrl>
+    <RepositoryUrl>https://github.com/alleey/EmbeddedPostgres</RepositoryUrl>
     <ProduceReferenceAssembly>False</ProduceReferenceAssembly>
     <Nullable>disable</Nullable>
   </PropertyGroup>

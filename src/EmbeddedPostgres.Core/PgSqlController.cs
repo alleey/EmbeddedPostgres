@@ -110,7 +110,7 @@ internal class PgSqlController : IPgSqlController
                 cancellationToken: cancellationToken
             ).ConfigureAwait(false);
         }
-        catch (EmbeddedPostgresCommandExecutionException ex)
+        catch (PgCommandExecutionException ex)
         {
             throw new PgCoreException($"{psqlPath} {string.Join(' ', args)} returned an error code {ex.ExitCode}");
         }
@@ -231,7 +231,7 @@ internal class PgSqlController : IPgSqlController
                 cancellationToken: cancellationToken
             ).ConfigureAwait(false);
         }
-        catch (EmbeddedPostgresCommandExecutionException ex)
+        catch (PgCommandExecutionException ex)
         {
             throw new PgCoreException($"{psqlPath} {string.Join(' ', args)} returned an error code {ex.ExitCode}");
         }

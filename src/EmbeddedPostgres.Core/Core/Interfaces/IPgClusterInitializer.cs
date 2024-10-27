@@ -8,7 +8,7 @@ namespace EmbeddedPostgres.Core.Interfaces;
 /// Classes implementing this interface provide the logic for setting up or restoring 
 /// a PostgreSQL cluster based on the provided configuration and options.
 /// </summary>
-public interface IPgInitializationSource
+public interface IPgClusterInitializer
 {
     /// <summary>
     /// Asynchronously initializes the PostgreSQL data cluster using the provided configuration.

@@ -161,7 +161,7 @@ public class PgEnvironmentBuilderLinux : IPgEnvironmentBuilder
                 logger.LogInformation($"Setting executable attribute on {binaryPath}");
                 await commandExecutor.ExecuteAsync("chmod", ["+x", binaryPath], cancellationToken: cancellationToken).ConfigureAwait(false);
             }
-            catch (EmbeddedPostgresCommandExecutionException ex)
+            catch (PgCommandExecutionException ex)
             {
                 throw new PgCoreException($"chmod +x {binaryPath} returned an error code {ex.ExitCode}");
             }

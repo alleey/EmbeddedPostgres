@@ -114,7 +114,7 @@ internal class PgInitDbController : IPgInitDbController
         {
             await commandExecutor.ExecuteAsync(initDbPath, args, cancellationToken: cancellationToken).ConfigureAwait(false);
         }
-        catch (EmbeddedPostgresCommandExecutionException ex)
+        catch (PgCommandExecutionException ex)
         {
             throw new PgCoreException($"{initDbPath} {string.Join(' ', args)} returned an error code {ex.ExitCode}");
         }

@@ -11,11 +11,11 @@ namespace EmbeddedPostgres.Core.Services;
 /// Represents the initialization source for PostgreSQL data clusters by restoring from an archive.
 /// This class handles the process of restoring a PostgreSQL data cluster from an archive file,
 /// applying the configuration provided in the options.
-/// Implements the <see cref="IPgInitializationSource"/> interface.
+/// Implements the <see cref="IPgClusterInitializer"/> interface.
 /// </summary>
 /// <param name="environment">Provides access to the environment configuration and operations for PostgreSQL clusters.</param>
 /// <param name="options">Specifies options for restoring the data cluster from an archive, such as the archive file path and forced reinitialization.</param>
-internal class PgRestoreArchiveInitializationSource(PgEnvironment environment, PgRestoreArchiveOptions options) : IPgInitializationSource
+internal class PgRestoreArchiveInitializationSource(PgEnvironment environment, PgRestoreArchiveOptions options) : IPgClusterInitializer
 {
     /// <summary>
     /// Asynchronously initializes a PostgreSQL data cluster by restoring data from a specified archive file.

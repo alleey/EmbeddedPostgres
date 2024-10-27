@@ -60,7 +60,7 @@ public class PgDataCluster
     /// <exception cref="PgCoreException">
     /// Thrown if an error occurs during the execution of the `initdb` command.
     /// </exception>
-    public async Task InitializeAsync(IPgInitializationSource initializationSource, CancellationToken cancellationToken = default)
+    public async Task InitializeAsync(IPgClusterInitializer initializationSource, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(initializationSource);
         await initializationSource.InitializeAsync(dataCluster, cancellationToken: cancellationToken).ConfigureAwait(false);
@@ -77,7 +77,7 @@ public class PgDataCluster
     /// <returns>
     /// A <see cref="Task"/> representing the asynchronous operation.
     /// </returns>
-    public async Task StartAsync(PgStartupParams startupParams, IPgInitializationSource initializationSource = null, CancellationToken cancellationToken = default)
+    public async Task StartAsync(PgStartupParams startupParams, IPgClusterInitializer initializationSource = null, CancellationToken cancellationToken = default)
     {
         var status = await GetStatusAsync(cancellationToken).ConfigureAwait(false);
         if (status.IsValid)

@@ -1,0 +1,42 @@
+name: Build
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - '**'
+      - "!main"
+
+env:
+  GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '8.x'
+
+    - name: Build and Test
+      run: dotnet build src/EmbeddedPostgres.sln -c Release
+
+    - name: Attach EmbeddedPostgres.Core
+      uses: actions/upload-artifact@v4
+      with:
+        name: EmbeddedPostgres.Core-${{ github.ref_name }}-${{ github.sha }}
+        path: src/EmbeddedPostgres.Core/bin/Release/net8.0
+
+    - name: Attach EmbeddedPostgres
+      uses: actions/upload-artifact@v4
+      with:
+        name: EmbeddedPostgres-${{ github.ref_name }}-${{ github.sha }}
+        path: src/EmbeddedPostgres/bin/Release/net8.0

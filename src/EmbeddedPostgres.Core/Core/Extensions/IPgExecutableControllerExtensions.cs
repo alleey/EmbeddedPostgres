@@ -54,7 +54,7 @@ internal static class IPgExecutableControllerExtensions
                 throw new PgCoreException("Failed to retrieve version");
             }
         }
-        catch (EmbeddedPostgresCommandExecutionException ex)
+        catch (PgCommandExecutionException ex)
         {
             if (!noThrow)
             {

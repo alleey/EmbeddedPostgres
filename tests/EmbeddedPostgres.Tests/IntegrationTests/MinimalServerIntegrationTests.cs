@@ -336,7 +336,7 @@ public class MinimalServerIntegrationTests
             })
         );
 
-        var factory = PgInitializationSourceFactory.FromEnvironment(pgServer.Environment);
+        var factory = PgClusterInitializerFactory.FromEnvironment(pgServer.Environment);
         var archiveFileFresh = Path.Combine(pgServer.Environment.Instance.GetInstanceFullPath(), "primary-fresh.zip");
         var archiveFile = Path.Combine(pgServer.Environment.Instance.GetInstanceFullPath(), "primary.zip");
 

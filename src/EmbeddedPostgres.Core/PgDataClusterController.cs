@@ -100,7 +100,7 @@ internal class PgDataClusterController : IPgDataClusterController
                 }
             }
         }
-        catch (EmbeddedPostgresCommandExecutionException ex)
+        catch (PgCommandExecutionException ex)
         {
             throw new PgCoreException($"{pgctlPath} {string.Join(' ', args)} returned an error code {ex.ExitCode}");
         }
@@ -172,7 +172,7 @@ internal class PgDataClusterController : IPgDataClusterController
                 args,
                 cancellationToken: cancellationToken).ConfigureAwait(false);
         }
-        catch (EmbeddedPostgresCommandExecutionException ex)
+        catch (PgCommandExecutionException ex)
         {
             throw new PgCoreException($"{pgctlPath} {string.Join(' ', args)} returned an error code {ex.ExitCode}");
         }
@@ -230,7 +230,7 @@ internal class PgDataClusterController : IPgDataClusterController
         {
             await commandExecutor.ExecuteAsync(pgctlPath, args, cancellationToken: cancellationToken).ConfigureAwait(false);
         }
-        catch (EmbeddedPostgresCommandExecutionException ex)
+        catch (PgCommandExecutionException ex)
         {
             throw new PgCoreException($"{pgctlPath} {string.Join(' ', args)} returned an error code {ex.ExitCode}");
         }
@@ -278,7 +278,7 @@ internal class PgDataClusterController : IPgDataClusterController
         {
             await commandExecutor.ExecuteAsync(pgctlPath, args, cancellationToken: cancellationToken).ConfigureAwait(false);
         }
-        catch (EmbeddedPostgresCommandExecutionException ex)
+        catch (PgCommandExecutionException ex)
         {
             throw new PgCoreException($"{pgctlPath} {string.Join(' ', args)} returned an error code {ex.ExitCode}");
         }
@@ -322,7 +322,7 @@ internal class PgDataClusterController : IPgDataClusterController
         {
             await commandExecutor.ExecuteAsync(pgctlPath, args, cancellationToken: cancellationToken).ConfigureAwait(false);
         }
-        catch (EmbeddedPostgresCommandExecutionException ex)
+        catch (PgCommandExecutionException ex)
         {
             throw new PgCoreException($"{pgctlPath} {string.Join(' ', args)} returned an error code {ex.ExitCode}");
         }
