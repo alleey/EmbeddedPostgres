@@ -1,0 +1,27 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <Description></Description>
+    <Copyright></Copyright>
+    <AssemblyTitle>EmbeddedPostgres.Core</AssemblyTitle>
+    <Authors>Shoaib Ali</Authors>
+    <TargetFrameworks>net8.0</TargetFrameworks>
+    <AssemblyName>$(MSBuildProjectName)</AssemblyName>
+    <PackageId>EmbeddedPostgres.Core</PackageId>
+    <PackageTags>postgres;postgresql;pg;embed;embedded;server;.net 8;net 8.0;.net core;.net;</PackageTags>
+    <PackageProjectUrl>https://github.com/alleey/EmbeddedPostgres</PackageProjectUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/alleey/EmbeddedPostgres</RepositoryUrl>
+    <ProduceReferenceAssembly>False</ProduceReferenceAssembly>
+    <Nullable>disable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="CliWrap" Version="3.6.6" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="8.0.1" />
+    <PackageReference Include="Microsoft.Extensions.Http.Polly" Version="8.0.10" />
+    <PackageReference Include="SharpCompress" Version="0.38.0" />
+    <PackageReference Include="TinyCsvParser" Version="2.7.0" />
+  </ItemGroup>
+</Project>
