@@ -27,7 +27,7 @@ jobs:
         dotnet-version: '8.x'
 
     - name: Build and Test
-      run: dotnet build src/EmbeddedPostgres.sln -c Release
+      run: dotnet build EmbeddedPostgres.sln -c Release
 
     - name: Attach EmbeddedPostgres.Core
       uses: actions/upload-artifact@v4

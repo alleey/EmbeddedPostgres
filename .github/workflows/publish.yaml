@@ -26,7 +26,7 @@ jobs:
         dotnet-version: '8.x'
 
     - name: Run Pack
-      run: dotnet pack src/EmbeddedPostgres.sln -c Release
+      run: dotnet pack EmbeddedPostgres.sln -c Release
 
     - name: Publish to NuGet
       run: |
