@@ -35,7 +35,6 @@ public class MinimalServerIntegrationTests
         pgServerBuilder = host.Services.GetService<PgServerBuilder>();
     }
 
-
     [TestMethod()]
     public async Task CreateServerAndExecuteSql()
     {
@@ -359,3 +358,4 @@ public class MinimalServerIntegrationTests
         }
     }
 }
+
