@@ -159,7 +159,7 @@ await pgServerBuilder.DestroyAsync(pgServer, PgShutdownParams.Fast);
 ```
 
 ### Example of creating a data cluster and restoring database from a existing dump.
-```
+```csharp
 PgServer pgServer = new PgServer(
     await pgServerBuilder.BuildAsync(builder =>
     {
