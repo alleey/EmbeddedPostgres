@@ -92,7 +92,7 @@ public class PgServer
     /// <summary>
     /// Indicates whether the server is in minimal mode.
     /// </summary>
-    public bool IsMinimal => environment.IsMinimal;
+    public bool IsMinimal => environment.SqlController == null;
 
     /// <summary>
     /// Adds a data cluster configuration to the server.
@@ -314,7 +314,7 @@ public class PgServer
     /// <summary>
     /// Asynchronously archives a PostgreSQL data cluster by stopping it and compressing its data directory into a specified archive file.
     /// </summary>
-    /// <param name="dataCluster">The configuration details of the PostgreSQL data cluster to be archived.</param>
+    /// <param name="clusterId">The unique identifier of the PostgreSQL data cluster.</param>
     /// <param name="archiveFilePath">
     /// The file path where the compressed archive of the data cluster will be saved. 
     /// This path must be a valid and writable location.
@@ -347,6 +347,26 @@ public class PgServer
     {
         cancellationToken.ThrowIfCancellationRequested();
         return GetClusterByUniqueId(clusterId).ArchiveAsync(archiveFilePath, shutdownParams, cancellationToken);
+    }
+
+    /// <summary>
+    /// Restores a PostgreSQL data cluster based on the provided configuration and restore options.
+    /// </summary>
+    /// <param name="clusterId">The unique identifier of the PostgreSQL data cluster.</param>
+    /// <param name="options">Options specifying the details of the restore process, such as source paths and restore options.</param>
+    /// <param name="cancellationToken">
+    /// An optional <see cref="CancellationToken"/> to observe while waiting for the restore process to complete.
+    /// The default value is <see cref="CancellationToken.None"/>, which represents no cancellation.
+    /// </param>
+    /// <returns>A <see cref="Task"/> that represents the asynchronous restore operation.</returns>
+    public Task ImportDumpAsync(
+        string clusterId,
+        PgRestoreDumpOptions options,
+        int maxDegreeOfParallelism = 1,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return GetClusterByUniqueId(clusterId).ImportDumpAsync(options, cancellationToken);
     }
 
     /// <summary>

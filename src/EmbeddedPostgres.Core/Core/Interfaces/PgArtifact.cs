@@ -34,7 +34,7 @@ public record PgArtifact
     /// <summary>
     /// Gets the target directory where the artifact should be stored or extracted.
     /// </summary>
-    internal string Target { get; init; }
+    internal string TargetDirectory { get; init; }
 
     /// <summary>
     /// Gets a value indicating whether the artifact is local (i.e., exists on the file system).

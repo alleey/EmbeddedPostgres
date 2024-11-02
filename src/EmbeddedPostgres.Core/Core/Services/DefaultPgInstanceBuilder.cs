@@ -61,7 +61,7 @@ internal class DefaultPgInstanceBuilder : IPgInstanceBuilder
         // Make sure the folder is there, cleaning it if required
         if (options.CleanInstall)
         {
-            logger.LogInformation($"Clean install is set. Deleting {options.InstanceDirectory}");
+            logger.LogInformation($"DropTargetDatabase install is set. Deleting {options.InstanceDirectory}");
             await DestroyAsync(options, cancellationToken).ConfigureAwait(false);
         }
 

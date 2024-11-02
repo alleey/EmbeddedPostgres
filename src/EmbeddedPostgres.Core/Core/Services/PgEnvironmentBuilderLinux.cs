@@ -11,15 +11,14 @@ using System.Threading.Tasks;
 
 namespace EmbeddedPostgres.Core.Services;
 
-public class PgEnvironmentBuilderLinux : IPgEnvironmentBuilder
+internal class PgEnvironmentBuilderLinux : IPgEnvironmentBuilder
 {
     private readonly IFileSystem fileSystem;
     private readonly ICommandExecutor commandExecutor;
     private readonly IFileExtractorFactory fileExtractorFactory;
     private readonly IFileCompressor fileCompressor;
-    private readonly Func<string, PgInstanceConfiguration, IPgDataClusterController> dataClusterControllerFactory;
-    private readonly Func<string, PgInstanceConfiguration, IPgInitDbController> initDbControllerFactory;
-    private readonly Func<string, PgInstanceConfiguration, IPgSqlController> sqlclientFactory;
+    private readonly IHttpService httpService;
+    private readonly PgControllerFactory controllerFactory;
     private readonly ILogger<PgEnvironmentBuilderLinux> logger;
     private readonly string[] requiredBinaries = [
         "bin/initdb",
@@ -32,18 +31,16 @@ public class PgEnvironmentBuilderLinux : IPgEnvironmentBuilder
         ICommandExecutor commandExecutor,
         IFileExtractorFactory fileExtractorFactory,
         IFileCompressor fileCompressor,
-        Func<string, PgInstanceConfiguration, IPgDataClusterController> dataClusterControllerFactory,
-        Func<string, PgInstanceConfiguration, IPgInitDbController> initDbControllerFactory,
-        Func<string, PgInstanceConfiguration, IPgSqlController> sqlclientFactory,
+        IHttpService httpService,
+        PgControllerFactory controllerFactory,
         ILogger<PgEnvironmentBuilderLinux> logger)
     {
         this.fileSystem = fileSystem ?? throw new ArgumentNullException(nameof(fileSystem));
         this.commandExecutor = commandExecutor ?? throw new ArgumentNullException(nameof(commandExecutor));
         this.fileExtractorFactory = fileExtractorFactory ?? throw new ArgumentNullException(nameof(fileExtractorFactory));
         this.fileCompressor = fileCompressor ?? throw new ArgumentNullException(nameof(fileCompressor));
-        this.dataClusterControllerFactory = dataClusterControllerFactory ?? throw new ArgumentNullException(nameof(dataClusterControllerFactory));
-        this.initDbControllerFactory = initDbControllerFactory ?? throw new ArgumentNullException(nameof(initDbControllerFactory));
-        this.sqlclientFactory = sqlclientFactory ?? throw new ArgumentNullException(nameof(sqlclientFactory));
+        this.httpService = httpService ?? throw new ArgumentNullException(nameof(httpService));
+        this.controllerFactory = controllerFactory ?? throw new ArgumentNullException(nameof(controllerFactory));
         this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
@@ -134,20 +131,29 @@ public class PgEnvironmentBuilderLinux : IPgEnvironmentBuilder
             await SetExecutableAttributesAsync(instanceConfig.InstanceDirectory, cancellationToken).ConfigureAwait(false);
         }
 
-        var sqlClient = sqlclientFactory("psql", instanceConfig);
-        var sqlClientVer = await sqlClient.GetVersionAsync(noThrow: true, cancellationToken: cancellationToken).ConfigureAwait(false);
-
         return new PgEnvironment
         {
             Instance = instanceConfig,
-            InitDb = initDbControllerFactory("initdb", instanceConfig),
-            Controller = dataClusterControllerFactory("pg_ctl", instanceConfig),
-            SqlClient = sqlClientVer == null ? null : sqlClient,
+            InitDbController = controllerFactory.GetController<IPgInitDbController>("initdb", instanceConfig),
+            DataClusterController = controllerFactory.GetController<IPgDataClusterController>("pg_ctl", instanceConfig),
+
+            SqlController = await GetOptionalControllerAsync<IPgSqlController>("psql", instanceConfig, cancellationToken).ConfigureAwait(false),
+            RestoreController = await GetOptionalControllerAsync<IPgRestoreController>("pg_restore", instanceConfig, cancellationToken).ConfigureAwait(false),
+
             FileSystem = fileSystem,
             CommandExecutor = commandExecutor,
             FileCompressor = fileCompressor,
             FileExtractorFactory = fileExtractorFactory,
+            HttpService = httpService,
         };
+
+        async Task<T> GetOptionalControllerAsync<T>(string binaryPath, PgInstanceConfiguration instanceConfig, CancellationToken cancellationToken)
+            where T : class
+        {
+            var controller = controllerFactory.GetController<T>(binaryPath, instanceConfig);
+            var version = await (controller as IPgExecutableController).GetVersionAsync(noThrow: true, cancellationToken: cancellationToken).ConfigureAwait(false);
+            return version == null ? null : controller;
+        }
     }
 
     private async Task SetExecutableAttributesAsync(string instanceDir, CancellationToken cancellationToken = default)

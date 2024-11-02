@@ -90,7 +90,7 @@ internal class SystemFileCompressor : IFileCompressor
                         continue;
                     }
 
-                    // Create a compressed entry from file
+                    // CreateTargetDatabase a compressed entry from file
                     archive.CreateEntryFromFile(
                         file,
                         relativeName,

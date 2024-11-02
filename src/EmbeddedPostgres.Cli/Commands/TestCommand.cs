@@ -2,7 +2,6 @@
 using CliFx.Attributes;
 using CliFx.Infrastructure;
 using EmbeddedPostgres.Core.Interfaces;
-using EmbeddedPostgres.Infrastructure.Interfaces;
 using EmbeddedPostgres.Utils;
 
 namespace EmbeddedPostgres.Cli.Commands;
@@ -11,12 +10,10 @@ namespace EmbeddedPostgres.Cli.Commands;
 public class TestCommand : ICommand
 {
     private readonly PgServerBuilder serverBuilder;
-    private readonly IFileCompressor compressor;
 
-    public TestCommand(PgServerBuilder serverBuilder, IFileCompressor compressor)
+    public TestCommand(PgServerBuilder serverBuilder)
     {
         this.serverBuilder = serverBuilder;
-        this.compressor = compressor;
     }
 
     public async ValueTask ExecuteAsync(IConsole console)
@@ -27,7 +24,6 @@ public class TestCommand : ICommand
                 builder.CacheDirectory = "downloads";
                 builder.InstanceDirectory = "postgres-test";
                 builder.ServerArtifact = PgStandardBinaries.Latest();
-                //builder.ServerArtifact = PgZonkyioBinaries.Latest();
                 builder.CleanInstall = true;
                 builder.ExcludePgAdminInstallation = true;
 

@@ -1,9 +1,7 @@
-﻿using EmbeddedPostgres.Infrastructure.Extensions;
-using EmbeddedPostgres.Infrastructure.Interfaces;
+﻿using EmbeddedPostgres.Infrastructure.Interfaces;
 using SharpCompress.Common;
 using SharpCompress.Writers;
 using System;
-using System.Diagnostics;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;

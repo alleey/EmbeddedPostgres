@@ -15,7 +15,7 @@ namespace EmbeddedPostgres.Core.Services;
 /// </summary>
 /// <param name="environment">Provides access to the environment configuration and operations for PostgreSQL clusters.</param>
 /// <param name="options">Specifies options for restoring the data cluster from an archive, such as the archive file path and forced reinitialization.</param>
-internal class PgRestoreArchiveInitializationSource(PgEnvironment environment, PgRestoreArchiveOptions options) : IPgClusterInitializer
+internal class PgRestoreArchiveInitializer(PgEnvironment environment, PgRestoreArchiveOptions options) : IPgClusterInitializer
 {
     /// <summary>
     /// Asynchronously initializes a PostgreSQL data cluster by restoring data from a specified archive file.
@@ -32,11 +32,12 @@ internal class PgRestoreArchiveInitializationSource(PgEnvironment environment, P
     /// </exception>
     public async Task InitializeAsync(PgDataClusterConfiguration dataCluster, CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         // Ensure the archive file exists
         environment.FileSystem.RequireFile(options.ArchiveFilePath);
 
         // Get the status of the data cluster to ensure it is in the stopped state
-        var status = await environment.Controller.GetStatusAsync(dataCluster, cancellationToken: cancellationToken).ConfigureAwait(false);
+        var status = await environment.DataClusterController.GetStatusAsync(dataCluster, cancellationToken: cancellationToken).ConfigureAwait(false);
         if (status.IsValid)
         {
             // Throw an exception if the data cluster is not stopped
@@ -47,7 +48,7 @@ internal class PgRestoreArchiveInitializationSource(PgEnvironment environment, P
         var dataDirectory = environment.Instance.GetDataFullPath(dataCluster);
 
         // Check if the data cluster has already been initialized
-        if (environment.InitDb.IsInitialized(dataCluster))
+        if (environment.InitDbController.IsInitialized(dataCluster))
         {
             // If the force reinitialization option is enabled, delete the existing data directory
             if (options.ForceReInitialization)

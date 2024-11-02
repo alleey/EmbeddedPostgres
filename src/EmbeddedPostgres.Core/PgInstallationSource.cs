@@ -50,7 +50,7 @@ public class PgInstallationSource
             pgMainBinaries with
             {
                 Kind = PgArtifactKind.Main,
-                Target = cacheDirectory,
+                TargetDirectory = cacheDirectory,
             }
         );
 
@@ -76,7 +76,7 @@ public class PgInstallationSource
             pgExtension with
             {
                 Kind = PgArtifactKind.Extension,
-                Target = cacheDirectory,
+                TargetDirectory = cacheDirectory,
             }
         );
 

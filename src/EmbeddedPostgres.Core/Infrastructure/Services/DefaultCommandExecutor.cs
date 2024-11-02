@@ -6,7 +6,6 @@ using EmbeddedPostgres.Infrastructure.Interfaces;
 using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -26,6 +25,7 @@ internal class DefaultCommandExecutor : ICommandExecutor
     /// </summary>
     /// <param name="binaryPath">The path to the executable binary to run.</param>
     /// <param name="arguments">An optional list of arguments to pass to the executable.</param>
+    /// <param name="environmentVariables">The environment variables to set for the command.</param>
     /// <param name="workingDirectory">The working directory from which to execute the command.</param>
     /// <param name="validateNonZeroExitCode">
     /// Indicates whether to validate the exit code; if true and the exit code is non-zero, an exception may be thrown.
@@ -45,19 +45,24 @@ internal class DefaultCommandExecutor : ICommandExecutor
     public async Task<ExecuteResult> ExecuteAsync(
         string binaryPath,
         IEnumerable<string> arguments = default,
+        IReadOnlyDictionary<string, string> environmentVariables = null,
         string workingDirectory = default,
         bool throwOnNonZeroExitCode = true,
         Func<string, CancellationToken, Task> outputListener = default,
         Func<string, CancellationToken, Task> errorListener = default,
         CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
+        Command command = null;
+
         try
         {
-            cancellationToken.ThrowIfCancellationRequested();
-            logger.LogInformation($"Execute: {binaryPath} {string.Join(' ', arguments)}, in {workingDirectory}");
+            command = Cli.Wrap(binaryPath).WithArguments(arguments ?? []);
 
-            var command = Cli.Wrap(binaryPath).WithArguments(arguments ?? []);
-
+            if (environmentVariables != null) 
+            { 
+                command = command.WithEnvironmentVariables(environmentVariables);
+            }
             if (!string.IsNullOrEmpty(workingDirectory)) 
             {
                 command = command.WithWorkingDirectory(workingDirectory);
@@ -66,6 +71,8 @@ internal class DefaultCommandExecutor : ICommandExecutor
             {
                 command = command.WithValidation(CommandResultValidation.None);
             }
+
+            logger.LogInformation($"Execute: {command}, in {workingDirectory}");
 
             // Prefer not to listen. Some processes hang if we capture their output even after all input has been collected
             //
@@ -76,7 +83,7 @@ internal class DefaultCommandExecutor : ICommandExecutor
             }
 
             int? exitCode = null;
-            await foreach (var cmdEvent in command.ListenAsync(cancellationToken))
+            await foreach (var cmdEvent in command.ListenAsync(cancellationToken).ConfigureAwait(false))
             {
                 switch (cmdEvent)
                 {
@@ -110,11 +117,11 @@ internal class DefaultCommandExecutor : ICommandExecutor
         }
         catch (CommandExecutionException ex)
         {
-            throw new PgCommandExecutionException(ex.ExitCode, $"{binaryPath} failed with error [{ex.ExitCode}]: {ex.Message}");
+            throw new PgCommandExecutionException(ex.ExitCode, $"{command} failed with error [{ex.ExitCode}]: {ex.Message}");
         }
         catch (Exception ex)
         {
-            throw new PgCommandExecutionException(-1, $"{binaryPath} failed with error : {ex.Message}");
+            throw new PgCommandExecutionException(-1, $"{command} failed with error : {ex.Message}");
         }
     }
 }

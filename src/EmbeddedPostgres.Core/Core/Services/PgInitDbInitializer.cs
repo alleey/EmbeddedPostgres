@@ -6,14 +6,14 @@ using System.Threading.Tasks;
 namespace EmbeddedPostgres.Core.Services;
 
 /// <summary>
-/// Represents the initialization source for PostgreSQL data clusters using the InitDb process.
+/// Represents the initialization source for PostgreSQL data clusters using the InitDbController process.
 /// This class handles the process of initializing or reinitializing the PostgreSQL data cluster
 /// by interacting with the PgEnvironment and applying the configuration provided in the options.
 /// Implements the <see cref="IPgClusterInitializer"/> interface.
 /// </summary>
 /// <param name="environment">Provides access to the environment configuration and operations for PostgreSQL clusters.</param>
 /// <param name="options">Specifies options for controlling the initialization behavior, such as forced reinitialization.</param>
-internal class PgInitDbInitializationSource(PgEnvironment environment, PgInitDbOptions options) : IPgClusterInitializer
+internal class PgInitDbInitializer(PgEnvironment environment, PgInitDbOptions options) : IPgClusterInitializer
 {
     /// <summary>
     /// Asynchronously initializes a PostgreSQL data cluster based on the given configuration.
@@ -27,8 +27,9 @@ internal class PgInitDbInitializationSource(PgEnvironment environment, PgInitDbO
     /// </exception>
     public async Task InitializeAsync(PgDataClusterConfiguration dataCluster, CancellationToken cancellationToken = default)
     {
+        cancellationToken.ThrowIfCancellationRequested();
         // Get the status of the data cluster to ensure it is in the stopped state
-        var status = await environment.Controller.GetStatusAsync(dataCluster, cancellationToken: cancellationToken).ConfigureAwait(false);
+        var status = await environment.DataClusterController.GetStatusAsync(dataCluster, cancellationToken: cancellationToken).ConfigureAwait(false);
         if (status.IsValid)
         {
             // Throw an exception if the data cluster is not stopped
@@ -36,7 +37,7 @@ internal class PgInitDbInitializationSource(PgEnvironment environment, PgInitDbO
         }
 
         // Check if the data cluster has already been initialized
-        if (environment.InitDb.IsInitialized(dataCluster))
+        if (environment.InitDbController.IsInitialized(dataCluster))
         {
             // If the force reinitialization option is enabled, delete the existing data directory
             if (options.ForceReInitialization)
@@ -51,6 +52,6 @@ internal class PgInitDbInitializationSource(PgEnvironment environment, PgInitDbO
         }
 
         // Perform the initialization asynchronously
-        await environment.InitDb.InitializeAsync(dataCluster, cancellationToken).ConfigureAwait(false);
+        await environment.InitDbController.InitializeAsync(dataCluster, cancellationToken).ConfigureAwait(false);
     }
 }

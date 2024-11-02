@@ -1,4 +1,6 @@
 using EmbeddedPostgres.Constants;
+using EmbeddedPostgres.Core;
+using EmbeddedPostgres.Core.Controllers;
 using EmbeddedPostgres.Core.Interfaces;
 using EmbeddedPostgres.Core.Services;
 using EmbeddedPostgres.Infrastructure;
@@ -7,7 +9,9 @@ using EmbeddedPostgres.Infrastructure.Services;
 using EmbeddedPostgres.Services;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using System;
+using System.Collections.Generic;
 using System.Net;
 using System.Runtime.InteropServices;
 
@@ -50,6 +54,7 @@ public static class ServiceCollectionExtensions
                                                 .Build());
 
         services.AddSingleton<IFileSystem, DefaultFileSystem>();
+        services.AddSingleton<IHttpService, DefaultHttpService>();
         services.AddSingleton<ICommandExecutor, DefaultCommandExecutor>();
 
         // Register the extractors
@@ -77,37 +82,52 @@ public static class ServiceCollectionExtensions
 
     private static void AddControllerFactories(IServiceCollection services)
     {
-        services.AddSingleton<Func<string, PgInstanceConfiguration, IPgDataClusterController>>(ctx =>
-            (string pathOrFilename, PgInstanceConfiguration instance) =>
-            {
-                return new PgDataClusterController(
+        services.AddSingleton<Dictionary<Type, Func<string, PgInstanceConfiguration, object>>>(ctx => new()
+        {
+            { 
+                typeof(IPgDataClusterController), (string pathOrFilename, PgInstanceConfiguration instance) =>
+                new PgDataClusterController(
                     pathOrFilename,
                     instance,
                     ctx.GetRequiredService<IFileSystem>(),
-                    ctx.GetRequiredService<ICommandExecutor>()
-                );
-            });
+                    ctx.GetRequiredService<ICommandExecutor>(),
+                    ctx.GetRequiredService<ILoggerFactory>().CreateLogger<PgDataClusterController>()
+                )
+            },
 
-        services.AddSingleton<Func<string, PgInstanceConfiguration, IPgInitDbController>>(ctx =>
-            (string pathOrFilename, PgInstanceConfiguration instance) =>
-            {
-                return new PgInitDbController(
+            { 
+                typeof(IPgInitDbController), (string pathOrFilename, PgInstanceConfiguration instance) =>
+                new PgInitDbController(
                     pathOrFilename,
                     instance,
                     ctx.GetRequiredService<IFileSystem>(),
-                    ctx.GetRequiredService<ICommandExecutor>()
-                );
-            });
+                    ctx.GetRequiredService<ICommandExecutor>(),
+                    ctx.GetRequiredService<ILoggerFactory>().CreateLogger<PgInitDbController>()
+                )
+            },
 
-        services.AddSingleton<Func<string, PgInstanceConfiguration, IPgSqlController>>(ctx =>
-            (string pathOrFilename, PgInstanceConfiguration instance) =>
-            {
-                return new PgSqlController(
+            { 
+                typeof(IPgSqlController), (string pathOrFilename, PgInstanceConfiguration instance) =>
+                new PgSqlController(
                     pathOrFilename,
                     instance,
                     ctx.GetRequiredService<IFileSystem>(),
-                    ctx.GetRequiredService<ICommandExecutor>()
-                );
-            });
+                    ctx.GetRequiredService<ICommandExecutor>(),
+                    ctx.GetRequiredService<ILoggerFactory>().CreateLogger<PgSqlController>()
+                )
+            },
+
+            { 
+                typeof(IPgRestoreController), (string pathOrFilename, PgInstanceConfiguration instance) =>
+                new PgRestoreController(
+                    pathOrFilename,
+                    instance,
+                    ctx.GetRequiredService<IFileSystem>(),
+                    ctx.GetRequiredService<ICommandExecutor>(),
+                    ctx.GetRequiredService<ILoggerFactory>().CreateLogger<PgRestoreController>()
+                ) 
+            }
+        });
+        services.AddSingleton<PgControllerFactory>();
     }
 }

@@ -59,6 +59,7 @@ public interface ICommandExecutor
     Task<ExecuteResult> ExecuteAsync(
         string binaryPath,
         IEnumerable<string> arguments = default,
+        IReadOnlyDictionary<string, string> environmentVariables = null,
         string workingDirectory = default,
         bool validateNonZeroExitCode = true,
         Func<string, CancellationToken, Task> outputListener = default,

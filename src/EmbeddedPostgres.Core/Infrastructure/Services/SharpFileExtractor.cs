@@ -85,15 +85,15 @@ internal class SharpFileExtractor : IFileExtractor
                 key = string.Join('/', key.Split('/').Skip(1));
             }
 
-            if (entry.IsDirectory)
-            {
-                fileSystem.EnsureDirectory(Path.Combine(destDir, key));
-                continue;
-            }
-
             // Apply the filter if any
             if ((excludePredicate?.Invoke(ToArchiveEntry(entry)) ?? false))
             {
+                continue;
+            }
+
+            if (entry.IsDirectory)
+            {
+                fileSystem.EnsureDirectory(Path.Combine(destDir, key));
                 continue;
             }
 

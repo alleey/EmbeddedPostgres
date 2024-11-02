@@ -2,6 +2,8 @@
 using EmbeddedPostgres.Core.Extensions;
 using EmbeddedPostgres.Core.Interfaces;
 using EmbeddedPostgres.Extensions;
+using EmbeddedPostgres.Infrastructure.Interfaces;
+using EmbeddedPostgres.Infrastructure;
 
 namespace EmbeddedPostgres;
 
@@ -27,7 +29,7 @@ public class PgDataCluster
     /// <returns>
     /// <c>true</c> if the data cluster is initialized (i.e., the <c>PG_VERSION</c> file exists); otherwise, <c>false</c>.
     /// </returns>
-    public bool IsInitialized() => environment.InitDb.IsInitialized(dataCluster);
+    public bool IsInitialized() => environment.InitDbController.IsInitialized(dataCluster);
 
     /// <summary>
     /// Returns the process ID (PID) of the PostgreSQL server if it is currently running.
@@ -45,7 +47,7 @@ public class PgDataCluster
     /// which contains the runtime status including the PID.
     /// </returns>
     public Task<PgRuntimeStatus> GetStatusAsync(CancellationToken cancellationToken = default)
-        => environment.Controller.GetStatusAsync(dataCluster, cancellationToken);
+        => environment.DataClusterController.GetStatusAsync(dataCluster, cancellationToken);
 
     /// <summary>
     /// Initializes a PostgreSQL data cluster in the specified data directory by running the `initdb` command.
@@ -96,7 +98,7 @@ public class PgDataCluster
             await InitializeAsync(initializationSource, cancellationToken).ConfigureAwait(false);
         }
 
-        await environment.Controller.StartAsync(dataCluster, cancellationToken: cancellationToken).ConfigureAwait(false);
+        await environment.DataClusterController.StartAsync(dataCluster, cancellationToken: cancellationToken).ConfigureAwait(false);
 
         if (startupParams.Wait)
         {
@@ -130,7 +132,7 @@ public class PgDataCluster
             return;
         }
 
-        await environment.Controller.StopAsync(dataCluster, shutdownParams, cancellationToken: cancellationToken).ConfigureAwait(false);
+        await environment.DataClusterController.StopAsync(dataCluster, shutdownParams, cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -148,7 +150,7 @@ public class PgDataCluster
     /// A <see cref="Task"/> representing the asynchronous operation.
     /// </returns>
     public Task ReloadConfigurationAsync(CancellationToken cancellationToken = default)
-        => environment.Controller.ReloadConfigurationAsync(dataCluster, cancellationToken);
+        => environment.DataClusterController.ReloadConfigurationAsync(dataCluster, cancellationToken);
 
     /// <summary>
     /// Asynchronously destroys a PostgreSQL data cluster by stopping it and deleting its associated data directory.
@@ -209,6 +211,29 @@ public class PgDataCluster
         => environment.ArchiveAsync(dataCluster, archiveFilePath, shutdownParams, cancellationToken);
 
     /// <summary>
+    /// Restores a PostgreSQL data cluster based on the provided configuration and restore options.
+    /// </summary>
+    /// <param name="dataCluster">The configuration of the PostgreSQL data cluster to be restored.</param>
+    /// <param name="options">Options specifying the details of the restore process, such as source paths and restore options.</param>
+    /// <param name="cancellationToken">
+    /// An optional <see cref="CancellationToken"/> to observe while waiting for the restore process to complete.
+    /// The default value is <see cref="CancellationToken.None"/>, which represents no cancellation.
+    /// </param>
+    /// <returns>A <see cref="Task"/> that represents the asynchronous restore operation.</returns>
+    public async Task ImportDumpAsync(PgRestoreDumpOptions options, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (environment.RestoreController == null)
+        {
+            throw new PgCoreException("Minimal environments do not support ImportDump");
+        }
+
+        await RequireRunningStatus(cancellationToken).ConfigureAwait(false);
+        await environment.RestoreController.RestoreAsync(dataCluster, options, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
     /// Lists the PostgreSQL databases asynchronously.
     /// </summary>
     /// <param name="listener">
@@ -231,13 +256,13 @@ public class PgDataCluster
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        if (environment.IsMinimal)
+        if (environment.SqlController == null)
         {
             throw new PgCoreException("Minimal environments do not support ListDatabases");
         }
 
         await RequireRunningStatus(cancellationToken).ConfigureAwait(false);
-        await environment.SqlClient.ListDatabasesAsync(dataCluster, listener, cancellationToken).ConfigureAwait(false);
+        await environment.SqlController.ListDatabasesAsync(dataCluster, listener, cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -273,13 +298,13 @@ public class PgDataCluster
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        if (environment.IsMinimal)
+        if (environment.SqlController == null)
         {
             throw new PgCoreException("Minimal environments do not support ExecuteSql");
         }
 
         await RequireRunningStatus(cancellationToken).ConfigureAwait(false);
-        await environment.SqlClient.ExecuteSqlAsync(
+        await environment.SqlController.ExecuteSqlAsync(
             dataCluster,
             sql,
             databaseName,
@@ -322,13 +347,13 @@ public class PgDataCluster
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        if (environment.IsMinimal)
+        if (environment.SqlController == null)
         {
             throw new PgCoreException("Minimal environments do not support ExecuteFile");
         }
 
         await RequireRunningStatus(cancellationToken).ConfigureAwait(false);
-        await environment.SqlClient.ExecuteFileAsync(
+        await environment.SqlController.ExecuteFileAsync(
             dataCluster,
             filePath,
             databaseName,
@@ -337,8 +362,6 @@ public class PgDataCluster
             format,
             cancellationToken: cancellationToken).ConfigureAwait(false);
     }
-
-
 
     private async Task RequireRunningStatus(CancellationToken cancellationToken = default)
     {

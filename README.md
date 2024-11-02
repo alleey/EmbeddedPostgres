@@ -18,6 +18,7 @@ builder.ConfigureServices((hostContext, services) =>
 ### Example of using Postgres minimal binaries from Zonkyiotest
 
 ```csharp
+PgServerBuilder pgServerBuilder = host.Services.GetService<PgServerBuilder>();
 PgServer pgServer = new PgServer(
     await pgServerBuilder.BuildAsync(builder =>
     {
@@ -82,11 +83,13 @@ PgServer pgServer = new PgServer(
         });
     })
 );
+...
 ```
 
 
 ### Example of creating multiple data clusters. Using archive of one cluster to initialize another cluster
 ```csharp
+PgServerBuilder pgServerBuilder = host.Services.GetService<PgServerBuilder>();
 PgServer pgServer = new PgServer(
     await pgServerBuilder.BuildAsync(builder =>
     {
@@ -153,4 +156,60 @@ await pgServer.StartAsync(["standby1"], startupParams: PgStartupParams.Default w
 var records = await TestConnection(pgServer, "standby1", "SELECT * FROM books;");
 
 await pgServerBuilder.DestroyAsync(pgServer, PgShutdownParams.Fast);
+```
+
+### Example of creating a data cluster and restoring database from a existing dump.
+```
+PgServer pgServer = new PgServer(
+    await pgServerBuilder.BuildAsync(builder =>
+    {
+        builder.CacheDirectory = "downloads";
+        builder.InstanceDirectory = "CreateServerAndImportDump";
+        builder.ServerArtifact = PgStandardBinaries.Latest(forceDownload: false);
+        builder.CleanInstall = false;
+
+        builder.AddDataCluster(cluster =>
+        {
+            cluster.UniqueId = "primary";
+            cluster.DataDirectory = "data";
+            cluster.Superuser = PgUser;
+            cluster.Port = Helpers.GetAvailablePort();
+        });
+    })
+);
+
+var factory = PgClusterInitializerFactory.FromEnvironment(pgServer.Environment);
+
+// Default initialize the primary data cluster and create an Archive before starting it
+//
+await pgServer.InitializeAsync(
+    ["primary"],
+    initializer: (cluster) => factory.InitializeUsingInitDb()
+);
+await pgServer.StartAsync(["primary"], startupParams: PgStartupParams.Default with { Wait = true });
+
+try
+{
+    await pgServer.Environment.DownloadExtractAsync(
+        "https://github.com/gordonkwokkwok/DVD-Rental-PostgreSQL-Project/raw/refs/heads/main/dataset/dvdrental.tar",
+        destDirectory: "downloads",
+        cacheDirectory: "downloads",
+        cacheFilename: "dvdrental-download.tar"
+    );
+
+    var options = new PgRestoreDumpOptions();
+    options.SourceFilename = Path.Combine("downloads", "dvdrental.tar");
+    options.ConnectDatabaseName = "postgres";
+    options.CreateTargetDatabase = true;
+    options.DropTargetDatabase = true;
+
+    await pgServer.ImportDumpAsync("primary", options);
+    ...
+
+}
+finally
+{
+    await pgServer.StopAsync(["primary"], shutdownParams: PgShutdownParams.Fast);
+    //await pgServerBuilder.DestroyAsync(pgServer, PgShutdownParams.Fast);
+}
 ```

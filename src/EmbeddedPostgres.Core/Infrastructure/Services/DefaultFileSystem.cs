@@ -1,9 +1,7 @@
 ﻿using EmbeddedPostgres.Core;
 using EmbeddedPostgres.Infrastructure.Interfaces;
-using System;
 using System.Collections.Generic;
 using System.IO;
-using System.IO.Pipes;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -54,7 +52,7 @@ internal class DefaultFileSystem : IFileSystem
     /// <param name="cancellationToken">A cancellation token for the asynchronous operation.</param>
     public void CopyDirectory(string sourceDir, string destDir)
     {
-        // Create the destination directory if it doesn't exist
+        // CreateTargetDatabase the destination directory if it doesn't exist
         EnsureDirectory(destDir);
 
         // ExtractAsync all files
@@ -102,7 +100,7 @@ internal class DefaultFileSystem : IFileSystem
             }
             else
             {
-                // Create the file to act as a marker/sentinel
+                // CreateTargetDatabase the file to act as a marker/sentinel
                 using (Open(filePath, FileMode.OpenOrCreate)) { }
                 return true;
             }

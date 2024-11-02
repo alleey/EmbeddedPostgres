@@ -13,24 +13,32 @@ namespace EmbeddedPostgres;
 public class PgClusterInitializerFactory(PgEnvironment environment)
 {
     /// <summary>
-    /// Creates a new initialization source for setting up the PostgreSQL data cluster using InitDb with the provided options.
+    /// Creates a compound cluster initializer that chains multiple initializers to be executed in sequence.
     /// </summary>
-    /// <param name="options">The options that configure how InitDb initializes the PostgreSQL cluster.</param>
-    /// <returns>An implementation of <see cref="IPgClusterInitializer"/> that will initialize the cluster using InitDb.</returns>
-    public IPgClusterInitializer InitializeUsingInitDb(PgInitDbOptions options = null)
-        => new PgInitDbInitializationSource(environment, options ?? PgInitDbOptions.Default);
+    /// <param name="clusterInitializers">An array of initializers to chain together.</param>
+    /// <returns>A compound initializer that executes each provided initializer in order.</returns>
+    public IPgClusterInitializer Chain(params IPgClusterInitializer[] clusterInitializers) 
+        => new PgCompoundInitializer(environment, clusterInitializers);
 
     /// <summary>
-    /// Creates a new initialization source for setting up the PostgreSQL data cluster using InitDb
+    /// Creates a new initialization source for setting up the PostgreSQL data cluster using InitDbController with the provided options.
+    /// </summary>
+    /// <param name="options">The options that configure how InitDbController initializes the PostgreSQL cluster.</param>
+    /// <returns>An implementation of <see cref="IPgClusterInitializer"/> that will initialize the cluster using InitDbController.</returns>
+    public IPgClusterInitializer InitializeUsingInitDb(PgInitDbOptions options = null)
+        => new PgInitDbInitializer(environment, options ?? PgInitDbOptions.Default);
+
+    /// <summary>
+    /// Creates a new initialization source for setting up the PostgreSQL data cluster using InitDbController
     /// with options configured by the specified <paramref name="configurer"/> action.
     /// </summary>
-    /// <param name="configurer">A delegate that configures <see cref="PgInitDbOptions"/> to customize InitDb initialization.</param>
-    /// <returns>An implementation of <see cref="IPgClusterInitializer"/> that will initialize the cluster using InitDb.</returns>
+    /// <param name="configurer">A delegate that configures <see cref="PgInitDbOptions"/> to customize InitDbController initialization.</param>
+    /// <returns>An implementation of <see cref="IPgClusterInitializer"/> that will initialize the cluster using InitDbController.</returns>
     public IPgClusterInitializer InitializeUsingInitDb(Action<PgInitDbOptions> configurer)
     {
         var options = PgInitDbOptions.Default;
         configurer(options);
-        return new PgInitDbInitializationSource(environment, options);
+        return new PgInitDbInitializer(environment, options);
     }
 
     /// <summary>
@@ -41,7 +49,7 @@ public class PgClusterInitializerFactory(PgEnvironment environment)
     public IPgClusterInitializer RestoreFromArchive(PgRestoreArchiveOptions options)
     {
         ArgumentException.ThrowIfNullOrEmpty(options.ArchiveFilePath, nameof(options.ArchiveFilePath));
-        return new PgRestoreArchiveInitializationSource(environment, options);
+        return new PgRestoreArchiveInitializer(environment, options);
     }
 
     /// <summary>

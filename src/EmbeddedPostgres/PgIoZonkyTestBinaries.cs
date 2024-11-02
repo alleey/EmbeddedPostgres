@@ -6,7 +6,7 @@ namespace EmbeddedPostgres;
 /// <summary>
 /// Handy structure to build installations of PostgreSQL binaries from the Zonky repository.
 /// </summary>
-public class PgZonkyioBinaries
+public class PgIoZonkyTestBinaries
 {
     private const string DefaultMavenRepository = "https://repo1.maven.org/maven2";
     private const string PgVersionLatest = "17.0.0";

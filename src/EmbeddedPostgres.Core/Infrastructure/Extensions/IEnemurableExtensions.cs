@@ -39,7 +39,7 @@ public static class IEnemurableExtensions
         var block = new ActionBlock<T>(body, options);
         foreach (var item in source)
         {
-            if (!await block.SendAsync(item))
+            if (!await block.SendAsync(item).ConfigureAwait(false))
             {
                 throw new InvalidOperationException($"Block didnt accept an item of type {item.GetType()}");
             }

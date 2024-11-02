@@ -34,7 +34,7 @@ public class PgServerBuilderOptions
     /// or a path to an already downloaded zip file. Note: Zonkyio minimal binaries are supported.
     /// </summary>
     /// <remarks>
-    /// See <see cref="PgZonkyioBinaries"/> and <see cref="PgStandardBinaries"/>.
+    /// See <see cref="PgIoZonkyTestBinaries"/> and <see cref="PgStandardBinaries"/>.
     /// </remarks>
     public string ServerBinaries
     {
@@ -46,7 +46,7 @@ public class PgServerBuilderOptions
     /// Gets or sets the main PostgreSQL artifact.
     /// </summary>
     /// <remarks>
-    /// See <see cref="PgZonkyioBinaries"/> and <see cref="PgStandardBinaries"/>.
+    /// See <see cref="PgIoZonkyTestBinaries"/> and <see cref="PgStandardBinaries"/>.
     /// </remarks>
     public PgArtifact ServerArtifact
     {
@@ -87,7 +87,7 @@ public class PgServerBuilderOptions
     /// Indicates whether to exclude installation of pgAdmin (applies to standard binaries). This can save
     /// ~650 MB of disk space.
     /// </summary>
-    public bool ExcludePgAdminInstallation { get; set; } = false;
+    public bool ExcludePgAdminInstallation { get; set; } = true;
 
     /// <summary>
     /// The parameter name for normalizing file attributes.

@@ -1,15 +1,16 @@
-﻿using EmbeddedPostgres.Core;
-using EmbeddedPostgres.Core.Extensions;
+﻿using EmbeddedPostgres.Core.Extensions;
 using EmbeddedPostgres.Core.Interfaces;
 using EmbeddedPostgres.Infrastructure;
 using EmbeddedPostgres.Infrastructure.Extensions;
 using EmbeddedPostgres.Infrastructure.Interfaces;
+using Microsoft.Extensions.Logging;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace EmbeddedPostgres;
+namespace EmbeddedPostgres.Core.Controllers;
 
 internal class PgInitDbController : IPgInitDbController
 {
@@ -17,16 +18,21 @@ internal class PgInitDbController : IPgInitDbController
     private readonly string initDbPath;
     private readonly IFileSystem fileSystem;
     private readonly ICommandExecutor commandExecutor;
+    private readonly ILogger<IPgInitDbController> logger;
 
     public PgInitDbController(
         string initDbPathOrFilename,
         PgInstanceConfiguration instance,
         IFileSystem fileSystem,
-        ICommandExecutor commandExecutor)
+        ICommandExecutor commandExecutor,
+        ILogger<IPgInitDbController> logger)
     {
-        this.instance = instance;
-        this.fileSystem = fileSystem;
-        this.commandExecutor = commandExecutor;
+        ArgumentException.ThrowIfNullOrEmpty(initDbPathOrFilename, nameof(initDbPathOrFilename));
+
+        this.instance = instance ?? throw new ArgumentNullException(nameof(instance));
+        this.fileSystem = fileSystem ?? throw new ArgumentNullException(nameof(fileSystem));
+        this.commandExecutor = commandExecutor ?? throw new ArgumentNullException(nameof(commandExecutor));
+        this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
         // An absolute path is used if provided
         this.initDbPath = Path.Combine(Path.GetFullPath(Path.Combine(instance.InstanceDirectory, "bin")), initDbPathOrFilename);
     }
@@ -116,7 +122,7 @@ internal class PgInitDbController : IPgInitDbController
         }
         catch (PgCommandExecutionException ex)
         {
-            throw new PgCoreException($"{initDbPath} {string.Join(' ', args)} returned an error code {ex.ExitCode}");
+            throw new PgCoreException(ex.Message);
         }
     }
 }

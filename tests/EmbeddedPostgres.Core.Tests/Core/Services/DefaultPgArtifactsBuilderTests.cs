@@ -10,6 +10,7 @@ namespace EmbeddedPostgres.Core.Services.Tests
     [TestClass()]
     public class DefaultPgArtifactsBuilderTests
     {
+        Mock<IHttpService> httpServiceMock = new();
         Mock<IFileSystem> fileSystemMock = new();
         Mock<HttpMessageHandler> httpMessageHandlerMock = new();
         Mock<ILogger<DefaultPgArtifactsBuilder>> loggerMock = new();
@@ -45,7 +46,7 @@ namespace EmbeddedPostgres.Core.Services.Tests
         public async Task ExceptionThrownIfNoMainBinarySpecified()
         {
             // Arrange
-            var builder = new DefaultPgArtifactsBuilder(httpClient, fileSystemMock.Object, loggerMock.Object);
+            var builder = new DefaultPgArtifactsBuilder(httpServiceMock.Object, fileSystemMock.Object);
             var artifacts = new List<PgArtifact>();
 
             // Act
@@ -59,9 +60,9 @@ namespace EmbeddedPostgres.Core.Services.Tests
         public async Task DownloadsMainBinaryIfNotInCache()
         {
             // Arrange
-            var builder = new DefaultPgArtifactsBuilder(httpClient, fileSystemMock.Object, loggerMock.Object);
+            var builder = new DefaultPgArtifactsBuilder(httpServiceMock.Object, fileSystemMock.Object);
             var artifacts = new List<PgArtifact>() {
-            new PgArtifact { Kind = PgArtifactKind.Main, Source = "http://dummy/file.zip", Target = "test-dir" }
+            new PgArtifact { Kind = PgArtifactKind.Main, Source = "http://dummy/file.zip", TargetDirectory = "test-dir" }
         };
 
             // Act
@@ -81,9 +82,9 @@ namespace EmbeddedPostgres.Core.Services.Tests
             // Arrange
             fileSystemMock.Setup(fs => fs.CheckPath("test-dir\\file.zip")).Returns(PathType.File);
 
-            var builder = new DefaultPgArtifactsBuilder(httpClient, fileSystemMock.Object, loggerMock.Object);
+            var builder = new DefaultPgArtifactsBuilder(httpServiceMock.Object, fileSystemMock.Object);
             var artifacts = new List<PgArtifact>() {
-                new PgArtifact { Kind = PgArtifactKind.Main, Source = "http://dummy/file.zip", Target = "test-dir" }
+                new PgArtifact { Kind = PgArtifactKind.Main, Source = "http://dummy/file.zip", TargetDirectory = "test-dir" }
             };
 
             // Act
@@ -101,12 +102,12 @@ namespace EmbeddedPostgres.Core.Services.Tests
         public async Task DownloadsExtensionsIfNotInCache()
         {
             // Arrange
-            var builder = new DefaultPgArtifactsBuilder(httpClient, fileSystemMock.Object, loggerMock.Object);
+            var builder = new DefaultPgArtifactsBuilder(httpServiceMock.Object, fileSystemMock.Object);
             var artifacts = new List<PgArtifact>() {
-                new PgArtifact { Kind = PgArtifactKind.Main, Source = "http://dummy/file.zip", Target = "test-dir" },
-                new PgArtifact { Kind = PgArtifactKind.Extension, Source = "http://dummy/file1.zip", Target = "test-dir" },
-                new PgArtifact { Kind = PgArtifactKind.Extension, Source = "http://dummy/file2.zip", Target = "test-dir" },
-                new PgArtifact { Kind = PgArtifactKind.Extension, Source = "http://dummy/file3.zip", Target = "test-dir" },
+                new PgArtifact { Kind = PgArtifactKind.Main, Source = "http://dummy/file.zip", TargetDirectory = "test-dir" },
+                new PgArtifact { Kind = PgArtifactKind.Extension, Source = "http://dummy/file1.zip", TargetDirectory = "test-dir" },
+                new PgArtifact { Kind = PgArtifactKind.Extension, Source = "http://dummy/file2.zip", TargetDirectory = "test-dir" },
+                new PgArtifact { Kind = PgArtifactKind.Extension, Source = "http://dummy/file3.zip", TargetDirectory = "test-dir" },
             };
 
             // Act
@@ -126,12 +127,12 @@ namespace EmbeddedPostgres.Core.Services.Tests
             // Arrange
             fileSystemMock.Setup(fs => fs.CheckPath(It.IsAny<string>())).Returns(PathType.File);
 
-            var builder = new DefaultPgArtifactsBuilder(httpClient, fileSystemMock.Object, loggerMock.Object);
+            var builder = new DefaultPgArtifactsBuilder(httpServiceMock.Object, fileSystemMock.Object);
             var artifacts = new List<PgArtifact>() {
-                new PgArtifact { Kind = PgArtifactKind.Main, Source = "http://dummy/file.zip", Target = "test-dir" },
-                new PgArtifact { Kind = PgArtifactKind.Extension, Source = "http://dummy/file1.zip", Target = "test-dir" },
-                new PgArtifact { Kind = PgArtifactKind.Extension, Source = "http://dummy/file2.zip", Target = "test-dir" },
-                new PgArtifact { Kind = PgArtifactKind.Extension, Source = "http://dummy/file3.zip", Target = "test-dir" },
+                new PgArtifact { Kind = PgArtifactKind.Main, Source = "http://dummy/file.zip", TargetDirectory = "test-dir" },
+                new PgArtifact { Kind = PgArtifactKind.Extension, Source = "http://dummy/file1.zip", TargetDirectory = "test-dir" },
+                new PgArtifact { Kind = PgArtifactKind.Extension, Source = "http://dummy/file2.zip", TargetDirectory = "test-dir" },
+                new PgArtifact { Kind = PgArtifactKind.Extension, Source = "http://dummy/file3.zip", TargetDirectory = "test-dir" },
             };
 
             // Act

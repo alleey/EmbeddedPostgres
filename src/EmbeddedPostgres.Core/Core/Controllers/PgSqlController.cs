@@ -1,8 +1,8 @@
-﻿using EmbeddedPostgres.Core;
-using EmbeddedPostgres.Core.Extensions;
+﻿using EmbeddedPostgres.Core.Extensions;
 using EmbeddedPostgres.Core.Interfaces;
 using EmbeddedPostgres.Infrastructure;
 using EmbeddedPostgres.Infrastructure.Interfaces;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 using TinyCsvParser;
 using TinyCsvParser.Mapping;
 
-namespace EmbeddedPostgres;
+namespace EmbeddedPostgres.Core.Controllers;
 
 internal class PgSqlController : IPgSqlController
 {
@@ -20,16 +20,21 @@ internal class PgSqlController : IPgSqlController
     private readonly string psqlPath;
     private readonly IFileSystem fileSystem;
     private readonly ICommandExecutor commandExecutor;
+    private readonly ILogger<PgSqlController> logger;
 
     public PgSqlController(
         string psqlPathOrFilename,
         PgInstanceConfiguration instance,
         IFileSystem fileSystem,
-        ICommandExecutor commandExecutor)
+        ICommandExecutor commandExecutor,
+        ILogger<PgSqlController> logger)
     {
-        this.instance = instance;
-        this.fileSystem = fileSystem;
-        this.commandExecutor = commandExecutor;
+        ArgumentException.ThrowIfNullOrEmpty(psqlPathOrFilename, nameof(psqlPathOrFilename));
+
+        this.instance = instance ?? throw new ArgumentNullException(nameof(instance));
+        this.fileSystem = fileSystem ?? throw new ArgumentNullException(nameof(fileSystem));
+        this.commandExecutor = commandExecutor ?? throw new ArgumentNullException(nameof(commandExecutor));
+        this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
         // An absolute path is used if provided
         this.psqlPath = Path.Combine(Path.GetFullPath(Path.Combine(instance.InstanceDirectory, "bin")), psqlPathOrFilename);
     }
@@ -100,7 +105,6 @@ internal class PgSqlController : IPgSqlController
                 args,
                 outputListener: async (line, ct) =>
                 {
-
                     var record = csvParser.ReadFromString(csvReaderOptions, line).FirstOrDefault();
                     if (record.IsValid)
                     {
@@ -112,7 +116,7 @@ internal class PgSqlController : IPgSqlController
         }
         catch (PgCommandExecutionException ex)
         {
-            throw new PgCoreException($"{psqlPath} {string.Join(' ', args)} returned an error code {ex.ExitCode}");
+            throw new PgCoreException(ex.Message);
         }
 
         string[] BuildArguments()
@@ -233,7 +237,7 @@ internal class PgSqlController : IPgSqlController
         }
         catch (PgCommandExecutionException ex)
         {
-            throw new PgCoreException($"{psqlPath} {string.Join(' ', args)} returned an error code {ex.ExitCode}");
+            throw new PgCoreException(ex.Message);
         }
 
         List<string> BuildArguments(PgSqlResultFormat fmt)

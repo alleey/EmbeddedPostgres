@@ -1,13 +1,10 @@
 ﻿using EmbeddedPostgres.Core.Interfaces;
 using EmbeddedPostgres.Infrastructure.Extensions;
 using EmbeddedPostgres.Infrastructure.Interfaces;
-using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -15,17 +12,15 @@ namespace EmbeddedPostgres.Core.Services;
 
 internal class DefaultPgArtifactsBuilder  : IPgArtifactsBuilder
 {
-    private readonly HttpClient httpClient;
+    private readonly IHttpService httpClient;
     private readonly IFileSystem fileSystem;
-    private readonly ILogger<DefaultPgArtifactsBuilder> logger;
 
     public DefaultPgArtifactsBuilder(
-                HttpClient httpClient,
-                IFileSystem fileSystem, ILogger<DefaultPgArtifactsBuilder> logger)
+                IHttpService httpClient,
+                IFileSystem fileSystem)
     {
         this.httpClient = httpClient ?? throw new ArgumentNullException(nameof(httpClient));
         this.fileSystem = fileSystem ?? throw new ArgumentNullException(nameof(fileSystem));
-        this.logger = logger;
     }
 
     /// <summary>
@@ -58,39 +53,15 @@ internal class DefaultPgArtifactsBuilder  : IPgArtifactsBuilder
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            var sourceUri = item.Source;
-            var fileName = fileSystem.ConvertToValidFilename(Path.GetFileName(sourceUri));
-            var targetFilename = Path.Combine(item.Target, fileName);
-
-            fileSystem.EnsureDirectory(item.Target);
+            fileSystem.EnsureDirectory(item.TargetDirectory);
 
             if (!item.IsLocal)
             {
-                // If the force flag is set and item already exists, remove it
-                if (fileSystem.FileOrDirectoryExists(targetFilename))
-                {
-                    if (item.Force)
-                    {
-                        fileSystem.RequireNotDirectory(targetFilename);
+                var downloadedFile = await httpClient
+                    .DownloadAsync(item.Source, item.TargetDirectory, force: item.Force, cancellationToken:cancellationToken)
+                    .ConfigureAwait(false);
 
-                        logger.LogInformation($"{targetFilename} already exist. Force deleting it.");
-
-                        // Caution: this will delete a folder (if it exists with the same name)
-                        fileSystem.DeleteFile(targetFilename);
-                    }
-                }
-
-                // Download if needed
-                if (!fileSystem.FileExists(targetFilename))
-                {
-                    logger.LogInformation($"Downloading {sourceUri} to {targetFilename}");
-
-                    using var outputFile = fileSystem.Open(targetFilename, FileMode.OpenOrCreate, FileAccess.Write, FileShare.None, 64 * 1024, true);
-
-                    await httpClient.DownloadAsync(sourceUri, outputFile, cancellationToken).ConfigureAwait(false); // Let the exception bubble
-                }
-
-                downloaded.Add(item with { Source = targetFilename, IsLocal = true });
+                downloaded.Add(item with { Source = downloadedFile, IsLocal = true });
             }
             else
             {
@@ -109,8 +80,6 @@ internal class DefaultPgArtifactsBuilder  : IPgArtifactsBuilder
     /// <exception cref="PgValidationException"></exception>
     private void ValidateLocalArtifacts(IEnumerable<PgArtifact> artifacts)
     {
-        logger.LogInformation($"Validating artifacts");
-
         if (!artifacts.Any(item => item.Kind == PgArtifactKind.Main))
         {
             throw new PgValidationException($"Main set of binaries for Postgres wan't specified");

@@ -1,19 +1,19 @@
-﻿using EmbeddedPostgres.Core.Interfaces;
+﻿using EmbeddedPostgres.Core.Extensions;
+using EmbeddedPostgres.Core.Interfaces;
 using EmbeddedPostgres.Utils;
 
 namespace EmbeddedPostgres.Extensions;
 
 public static class PgServerExtensions
 {
-    public static async Task<bool> IsRunningAsync(this PgDataCluster server, CancellationToken cancellationToken = default)
-    {
-        var status = await server.GetStatusAsync(cancellationToken).ConfigureAwait(false);
-        return status.IsValid;
-    }
-
-    public static void WaitForStartup(this PgDataCluster server, int waitTimeoutMs = 30000) 
-        => Helpers.WaitForServerStartup(server.Settings.Host, server.Settings.Port);
-
-    public static void WaitForStartup(this PgDataClusterConfiguration config, int waitTimeoutMs = 30000)
-        => Helpers.WaitForServerStartup(config.Host, config.Port);
+    /// <summary>
+    /// Returns the full path of the instance directory specified in the <paramref name="configuration"/>.
+    /// </summary>
+    /// <param name="server">The <see cref="PgServer"/> instance containing the directory details.</param>
+    /// <returns>
+    /// A string representing the full path to the instance directory.
+    /// </returns>
+    /// <exception cref="ArgumentNullException">Thrown if <paramref name="configuration"/> is null.</exception>
+    public static string GetInstanceFullPath(this PgServer server)
+        => server.Environment.GetInstanceFullPath();
 }

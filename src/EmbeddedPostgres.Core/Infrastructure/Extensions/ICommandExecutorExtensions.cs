@@ -29,6 +29,7 @@ public static class ICommandExecutorExtensions
         this ICommandExecutor instance,
         string binaryPath,
         IEnumerable<string> arguments = default,
+        IReadOnlyDictionary<string, string> environmentVariables = null,
         string workingDirectory = default,
         bool throwOnNonZeroExitCode = true,
         Action<string> outputListener = default,
@@ -55,6 +56,14 @@ public static class ICommandExecutorExtensions
             }
         : null;
 
-        return instance.ExecuteAsync(binaryPath, arguments, workingDirectory, throwOnNonZeroExitCode, asyncOutputListener, asyncErrorListener, cancellationToken);
+        return instance.ExecuteAsync(
+            binaryPath,
+            arguments,
+            environmentVariables,
+            workingDirectory,
+            throwOnNonZeroExitCode,
+            asyncOutputListener,
+            asyncErrorListener,
+            cancellationToken);
     }
 }

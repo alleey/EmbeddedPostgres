@@ -1,33 +1,38 @@
-﻿using EmbeddedPostgres.Core;
-using EmbeddedPostgres.Core.Extensions;
+﻿using EmbeddedPostgres.Core.Extensions;
 using EmbeddedPostgres.Core.Interfaces;
 using EmbeddedPostgres.Infrastructure;
 using EmbeddedPostgres.Infrastructure.Extensions;
 using EmbeddedPostgres.Infrastructure.Interfaces;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace EmbeddedPostgres;
+namespace EmbeddedPostgres.Core.Controllers;
 
 internal class PgDataClusterController : IPgDataClusterController
 {
     private readonly PgInstanceConfiguration instance;
     private readonly IFileSystem fileSystem;
     private readonly ICommandExecutor commandExecutor;
+    private readonly ILogger<PgDataClusterController> logger;
     private readonly string pgctlPath;
 
     public PgDataClusterController(
         string pgctlPathOrFilename,
         PgInstanceConfiguration instance,
         IFileSystem fileSystem,
-        ICommandExecutor commandExecutor)
+        ICommandExecutor commandExecutor,
+        ILogger<PgDataClusterController> logger)
     {
-        this.instance = instance;
-        this.fileSystem = fileSystem;
-        this.commandExecutor = commandExecutor;
+        ArgumentException.ThrowIfNullOrEmpty(pgctlPathOrFilename, nameof(pgctlPathOrFilename));
+
+        this.instance = instance ?? throw new ArgumentNullException(nameof(instance));
+        this.fileSystem = fileSystem ?? throw new ArgumentNullException(nameof(fileSystem));
+        this.commandExecutor = commandExecutor ?? throw new ArgumentNullException(nameof(commandExecutor));
+        this.logger = logger ?? throw new ArgumentNullException(nameof(logger));
         this.pgctlPath = Path.Combine(Path.GetFullPath(Path.Combine(instance.InstanceDirectory, "bin")), pgctlPathOrFilename);
     }
 
@@ -102,7 +107,7 @@ internal class PgDataClusterController : IPgDataClusterController
         }
         catch (PgCommandExecutionException ex)
         {
-            throw new PgCoreException($"{pgctlPath} {string.Join(' ', args)} returned an error code {ex.ExitCode}");
+            throw new PgCoreException(ex.Message);
         }
         catch (Exception ex)
         {
@@ -174,7 +179,7 @@ internal class PgDataClusterController : IPgDataClusterController
         }
         catch (PgCommandExecutionException ex)
         {
-            throw new PgCoreException($"{pgctlPath} {string.Join(' ', args)} returned an error code {ex.ExitCode}");
+            throw new PgCoreException(ex.Message);
         }
 
         string[] BuildArguments()
@@ -232,7 +237,7 @@ internal class PgDataClusterController : IPgDataClusterController
         }
         catch (PgCommandExecutionException ex)
         {
-            throw new PgCoreException($"{pgctlPath} {string.Join(' ', args)} returned an error code {ex.ExitCode}");
+            throw new PgCoreException(ex.Message);
         }
 
         string[] BuildArguments(PgShutdownParams shutdownParams)
@@ -280,7 +285,7 @@ internal class PgDataClusterController : IPgDataClusterController
         }
         catch (PgCommandExecutionException ex)
         {
-            throw new PgCoreException($"{pgctlPath} {string.Join(' ', args)} returned an error code {ex.ExitCode}");
+            throw new PgCoreException(ex.Message);
         }
 
         string[] BuildArguments(PgShutdownParams shutdownParams)
@@ -324,7 +329,7 @@ internal class PgDataClusterController : IPgDataClusterController
         }
         catch (PgCommandExecutionException ex)
         {
-            throw new PgCoreException($"{pgctlPath} {string.Join(' ', args)} returned an error code {ex.ExitCode}");
+            throw new PgCoreException(ex.Message);
         }
 
         string[] BuildArguments()
