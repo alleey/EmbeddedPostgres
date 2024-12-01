@@ -158,8 +158,8 @@ var records = await TestConnection(pgServer, "standby1", "SELECT * FROM books;")
 await pgServerBuilder.DestroyAsync(pgServer, PgShutdownParams.Fast);
 ```
 
-### Example of creating a data cluster and restoring database from a existing dump.
-```
+### Example of creating a data cluster and restoring database from an existing dump.
+```csharp
 PgServer pgServer = new PgServer(
     await pgServerBuilder.BuildAsync(builder =>
     {

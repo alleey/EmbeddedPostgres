@@ -8,7 +8,19 @@
     <Authors>Shoaib Ali</Authors>
     <AssemblyName>empg</AssemblyName>
     <PackAsTool>True</PackAsTool>
+    <RepositoryUrl>https://github.com/alleey/EmbeddedPostgres</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/alleey/EmbeddedPostgres</PackageProjectUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <Copyright>Shoaib Ali</Copyright>
+    <PackageTags>postgres;postgresql;pg;embed;embedded;server;.net 8;net 8.0;.net core;.net;</PackageTags>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="CliFx" Version="2.3.5" />

@@ -122,6 +122,7 @@ public class PgServerBuilderOptions
     {
         extensions.Add(new PgArtifact { Source = source, IsLocal = PathChecker.IsLocalPath(source) });
     }
+
     /// <summary>
     /// Gets the list of currently configured PostgreSQL data clusters.
     /// </summary>

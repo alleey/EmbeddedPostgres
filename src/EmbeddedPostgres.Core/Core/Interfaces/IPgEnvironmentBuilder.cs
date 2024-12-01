@@ -9,9 +9,12 @@ namespace EmbeddedPostgres.Core.Interfaces;
 /// </summary>
 public interface IPgEnvironmentBuilder
 {
+
     /// <summary>
     /// Validates the specified instance directory to ensure it meets the necessary requirements
-    /// for a PostgreSQL instance.
+    /// for a PostgreSQL instance. This method checks the existence of required binaries and
+    /// retrieves their versions, returning a dictionary with binary names as keys and version
+    /// information as values.
     /// </summary>
     /// <param name="instanceDir">
     /// The directory where the PostgreSQL instance is located. This should be a valid path
@@ -22,10 +25,13 @@ public interface IPgEnvironmentBuilder
     /// is <see cref="CancellationToken.None"/>.
     /// </param>
     /// <returns>
-    /// A task that represents the asynchronous validation operation. The task will complete
-    /// once the validation process has finished.
+    /// A task that represents the asynchronous validation operation, containing a dictionary
+    /// where keys are binary names and values are the respective version information.
     /// </returns>
-    Task ValidateAsync(
+    /// <exception cref="PgValidationException">
+    /// Thrown if validation fails due to a missing binary or an error during version retrieval.
+    /// </exception>
+    Task<Dictionary<string, string>> ValidateAsync(
         string instanceDir,
         CancellationToken cancellationToken = default);
 

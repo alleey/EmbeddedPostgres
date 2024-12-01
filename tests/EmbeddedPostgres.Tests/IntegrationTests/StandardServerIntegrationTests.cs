@@ -43,7 +43,7 @@ public class StandardServerIntegrationTests
                 builder.CacheDirectory = "downloads";
                 builder.InstanceDirectory = "CreateServerAndImportDump";
                 builder.ServerArtifact = PgStandardBinaries.Latest(forceDownload: false);
-                builder.CleanInstall = false;
+                builder.CleanInstall = true;
 
                 builder.AddDataCluster(cluster =>
                 {
@@ -76,7 +76,7 @@ public class StandardServerIntegrationTests
             );
 
             var options = new PgRestoreDumpOptions();
-            options.SourceFilename = Path.Combine("downloads", "dvdrental.tar");
+            options.Source = Path.Combine("downloads", "dvdrental.tar");
             options.ConnectDatabaseName = "postgres";
             options.CreateTargetDatabase = true;
             options.DropTargetDatabase = true;
@@ -84,6 +84,56 @@ public class StandardServerIntegrationTests
             await pgServer.ImportDumpAsync("primary", options);
             var records = await pgServer.ExecuteReaderAsync("primary", "SELECT * FROM staff;", database: "dvdrental").Take(25).ToListAsync();
 
+        }
+        finally
+        {
+            //await pgServer.StopAsync(["primary"], shutdownParams: PgShutdownParams.Fast);
+            await pgServerBuilder.DestroyAsync(pgServer, PgShutdownParams.Fast);
+        }
+    }
+
+
+    [TestMethod()]
+    public async Task CreateServerAndExportDump()
+    {
+        PgServer pgServer = new PgServer(
+            await pgServerBuilder.BuildAsync(builder =>
+            {
+                builder.CacheDirectory = "downloads";
+                builder.InstanceDirectory = "CreateServerAndExportDump";
+                builder.ServerArtifact = PgStandardBinaries.Latest(forceDownload: false);
+                builder.CleanInstall = true;
+
+                builder.AddDataCluster(cluster =>
+                {
+                    cluster.UniqueId = "primary";
+                    cluster.DataDirectory = "data";
+                    cluster.Superuser = PgUser;
+                    cluster.Port = Helpers.GetAvailablePort();
+                });
+            })
+        );
+
+        var factory = PgClusterInitializerFactory.FromEnvironment(pgServer.Environment);
+
+        // Default initialize the primary data cluster and create an Archive before starting it
+        //
+        await pgServer.InitializeAsync(
+            ["primary"],
+            initializer: (cluster) => factory.InitializeUsingInitDb()
+        );
+        await pgServer.StartAsync(["primary"], startupParams: PgStartupParams.Default with { Wait = true });
+
+        try
+        {
+            // Create books table and insert some records
+            await pgServer.TestConnectionAsync("primary");
+            var options = new PgExportDumpOptions();
+            options.DatabaseName = "postgres";
+            options.Target = "archives.tar";
+            options.TargetFormat = "t";
+
+            await pgServer.ExportDumpAsync("primary", options);
         }
         finally
         {

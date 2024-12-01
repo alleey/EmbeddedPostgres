@@ -342,7 +342,6 @@ public class PgServer
         string clusterId,
         string archiveFilePath,
         PgShutdownParams shutdownParams = null,
-        int maxDegreeOfParallelism = 1,
         CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -350,10 +349,10 @@ public class PgServer
     }
 
     /// <summary>
-    /// Restores a PostgreSQL data cluster based on the provided configuration and restore options.
+    /// Restores a PostgreSQL data cluster identified by the specified cluster ID based on the provided restore options.
     /// </summary>
-    /// <param name="clusterId">The unique identifier of the PostgreSQL data cluster.</param>
-    /// <param name="options">Options specifying the details of the restore process, such as source paths and restore options.</param>
+    /// <param name="clusterId">The unique identifier of the PostgreSQL data cluster to be restored.</param>
+    /// <param name="options">The options specifying the details of the restore process, including source paths and restore parameters.</param>
     /// <param name="cancellationToken">
     /// An optional <see cref="CancellationToken"/> to observe while waiting for the restore process to complete.
     /// The default value is <see cref="CancellationToken.None"/>, which represents no cancellation.
@@ -362,11 +361,29 @@ public class PgServer
     public Task ImportDumpAsync(
         string clusterId,
         PgRestoreDumpOptions options,
-        int maxDegreeOfParallelism = 1,
         CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
         return GetClusterByUniqueId(clusterId).ImportDumpAsync(options, cancellationToken);
+    }
+
+    /// <summary>
+    /// Exports a PostgreSQL data cluster identified by the specified cluster ID based on the provided dump options.
+    /// </summary>
+    /// <param name="clusterId">The unique identifier of the PostgreSQL data cluster to be exported.</param>
+    /// <param name="options">The options specifying the details of the export process, including destination paths and export parameters.</param>
+    /// <param name="cancellationToken">
+    /// An optional <see cref="CancellationToken"/> to observe while waiting for the export process to complete.
+    /// The default value is <see cref="CancellationToken.None"/>, which represents no cancellation.
+    /// </param>
+    /// <returns>A <see cref="Task"/> that represents the asynchronous export operation.</returns>
+    public Task ExportDumpAsync(
+        string clusterId,
+        PgExportDumpOptions options,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        return GetClusterByUniqueId(clusterId).ExportDumpAsync(options, cancellationToken);
     }
 
     /// <summary>

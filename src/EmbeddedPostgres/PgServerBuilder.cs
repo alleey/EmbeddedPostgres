@@ -1,20 +1,18 @@
 ﻿using EmbeddedPostgres.Core;
 using EmbeddedPostgres.Core.Interfaces;
 using EmbeddedPostgres.Extensions;
-using EmbeddedPostgres.Infrastructure.Extensions;
-using Microsoft.Extensions.Configuration;
 
 namespace EmbeddedPostgres;
 
 public class PgServerBuilder
 {
     private readonly IPgInstanceBuilder instanceBuilder;
-    private readonly IPgEnvironmentBuilder bootstrapper;
+    private readonly IPgEnvironmentBuilder environmentBuilder;
 
-    public PgServerBuilder(IPgInstanceBuilder instanceBuilder, IPgEnvironmentBuilder bootstrapper)
+    public PgServerBuilder(IPgInstanceBuilder instanceBuilder, IPgEnvironmentBuilder environmentBuilder)
     {
-        this.instanceBuilder = instanceBuilder;
-        this.bootstrapper = bootstrapper;
+        this.instanceBuilder = instanceBuilder ?? throw new ArgumentNullException(nameof(instanceBuilder));
+        this.environmentBuilder = environmentBuilder ?? throw new ArgumentNullException(nameof(environmentBuilder));
     }
 
     /// <summary>
@@ -63,8 +61,8 @@ public class PgServerBuilder
             // If clean install isn't required, check if we have a working environment
             // This will save a lot of time and cpu
             //
-            await bootstrapper.ValidateAsync(instanceOptions.InstanceDirectory, cancellationToken: cancellationToken).ConfigureAwait(false);
-            hasEnvironment = true;
+            var binaries = await environmentBuilder.ValidateAsync(instanceOptions.InstanceDirectory, cancellationToken: cancellationToken).ConfigureAwait(false);
+            hasEnvironment = binaries.Count == 3;
         }
         catch (PgCoreException)
         {
@@ -76,7 +74,7 @@ public class PgServerBuilder
         {
             if (hasEnvironment)
             {
-                await DestoryExistingAsync(options, cancellationToken).ConfigureAwait(false);
+                await DestroyAsync(options, PgShutdownParams.Fast, cancellationToken).ConfigureAwait(false);
             }
 
             var installationSource = new PgInstallationSource(options.CacheDirectory);
@@ -90,10 +88,10 @@ public class PgServerBuilder
             await instanceBuilder.BuildAsync(instanceOptions, installationSource.Build(), cancellationToken: cancellationToken).ConfigureAwait(false);
 
             // Lets see if we have a working environment
-            await bootstrapper.ValidateAsync(instanceOptions.InstanceDirectory, cancellationToken: cancellationToken).ConfigureAwait(false);
+            await environmentBuilder.ValidateAsync(instanceOptions.InstanceDirectory, cancellationToken: cancellationToken).ConfigureAwait(false);
         }
 
-        var environment = await bootstrapper.BuildAsync(instanceOptions, cancellationToken: cancellationToken).ConfigureAwait(false);
+        var environment = await environmentBuilder.BuildAsync(instanceOptions, cancellationToken: cancellationToken).ConfigureAwait(false);
         foreach (var cluster in options.DataClusters)
         {
             environment.DataClusters.Add(cluster.Configuration);
@@ -106,14 +104,36 @@ public class PgServerBuilder
 
     /// <summary>
     /// Asynchronously destroys the specified PostgreSQL server instance by stopping it 
-    /// and then cleaning up its resources.
+    /// and then cleaning up its resources. This includes shutting down all data clusters 
+    /// and removing any associated instance data.
     /// </summary>
-    /// <param name="server">The <see cref="PgServer"/> instance to be destroyed.</param>
-    /// <param name="shutdownParams">The parameters for shutting down the PostgreSQL server.</param>
-    /// <param name="cancellationToken">A token to monitor for cancellation requests. Default is <c>CancellationToken.None</c>.</param>
-    /// <returns>A task that represents the asynchronous operation.</returns>
-    /// <exception cref="OperationCanceledException">Thrown when the operation is canceled via the <paramref name="cancellationToken"/>.</exception>
-    /// <exception cref="Exception">Thrown if there is an error while stopping or destroying the server.</exception>
+    /// <param name="server">
+    /// The <see cref="PgServer"/> instance to be destroyed. This represents the PostgreSQL 
+    /// server whose resources will be cleaned up.
+    /// </param>
+    /// <param name="shutdownParams">
+    /// The parameters for shutting down the PostgreSQL server, which may specify shutdown 
+    /// modes or additional flags.
+    /// </param>
+    /// <param name="dataDirectories">
+    /// Optional. A collection of data directory paths that should be considered for cleanup 
+    /// after stopping the server. If null, defaults to the server's data clusters.
+    /// </param>
+    /// <param name="cancellationToken">
+    /// A token to monitor for cancellation requests, allowing the operation to be canceled 
+    /// if necessary. The default value is <see cref="CancellationToken.None"/>.
+    /// </param>
+    /// <returns>
+    /// A task that represents the asynchronous destroy operation. The task completes once the 
+    /// server has been stopped and all resources have been successfully cleaned up.
+    /// </returns>
+    /// <exception cref="OperationCanceledException">
+    /// Thrown if the operation is canceled via the <paramref name="cancellationToken"/>.
+    /// </exception>
+    /// <exception cref="Exception">
+    /// Thrown if there is an error while stopping or destroying the server, such as failure 
+    /// to shut down data clusters or clean up resources.
+    /// </exception>
     public async Task DestroyAsync(
         PgServer server,
         PgShutdownParams shutdownParams,
@@ -123,34 +143,60 @@ public class PgServerBuilder
         ArgumentNullException.ThrowIfNull(server);
         cancellationToken.ThrowIfCancellationRequested();
 
-        await server.DataClusters.ParallelForEachAsync(
-            async cluster =>
-            {
-                await cluster.DestroyAsync(shutdownParams, cancellationToken: cancellationToken).ConfigureAwait(false);
-            }, 
+        // Stop all data clusters in the server using the specified shutdown parameters
+        await server.StopAsync(
+            PgServer.AllDataClusters,
+            shutdownParams,
             cancellationToken: cancellationToken).ConfigureAwait(false);
 
+        // Destroy the instance and clean up resources associated with the environment
         await instanceBuilder.DestroyAsync(server.Environment.Instance, cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
-    private async Task DestoryExistingAsync(PgServerBuilderOptions builderOptions, CancellationToken cancellationToken = default)
+    /// <summary>
+    /// Destroys the PostgreSQL server instance specified by the provided options, shutting it down
+    /// cleanly and deleting any related data and resources.
+    /// </summary>
+    /// <param name="builderOptions">
+    /// The options used to configure the PostgreSQL server instance. This includes configuration
+    /// for data clusters and other instance-specific settings.
+    /// </param>
+    /// <param name="shutdownParams">
+    /// Parameters for shutting down the server, which may include details such as the shutdown
+    /// mode and any additional shutdown flags.
+    /// </param>
+    /// <param name="cancellationToken">
+    /// A token that can be used to signal cancellation of the operation. The default value
+    /// is <see cref="CancellationToken.None"/>.
+    /// </param>
+    /// <returns>
+    /// A task that represents the asynchronous destroy operation. The task will complete
+    /// once the server instance has been shut down and resources have been cleaned up.
+    /// </returns>
+    public async Task DestroyAsync(
+        PgServerBuilderOptions builderOptions,
+        PgShutdownParams shutdownParams,
+        CancellationToken cancellationToken = default)
     {
-        // Make copy of options without any params, we dont want to execute any fixes etc.
+        // Make a copy of instance options without platform parameters to avoid executing fixes or updates
         var instanceOptions = builderOptions.InstanceOptions with
         {
             PlatformParameters = new Dictionary<string, object>()
         };
 
-        var makeShiftEnv = await bootstrapper.BuildAsync(instanceOptions, cancellationToken: cancellationToken).ConfigureAwait(false);
+        // Build a temporary environment based on instance options, without original platform parameters
+        var makeShiftEnv = await environmentBuilder.BuildAsync(instanceOptions, cancellationToken: cancellationToken).ConfigureAwait(false);
+
+        // Add configured data clusters to the temporary environment
         foreach (var cluster in builderOptions.DataClusters)
         {
             makeShiftEnv.DataClusters.Add(cluster.Configuration);
         }
 
-        // CreateTargetDatabase a temp serer so we can issue a stop command
+        // Create a temporary server instance to issue a stop command
         var makeShiftServer = new PgServer(makeShiftEnv);
 
-        // Now stop the server and destroy instance
-        await DestroyAsync(makeShiftServer, PgShutdownParams.Fast, cancellationToken: cancellationToken).ConfigureAwait(false);
+        // Stop the server and destroy the instance
+        await DestroyAsync(makeShiftServer, shutdownParams, cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 }

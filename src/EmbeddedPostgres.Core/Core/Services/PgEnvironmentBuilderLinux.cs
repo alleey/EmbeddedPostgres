@@ -5,6 +5,7 @@ using EmbeddedPostgres.Infrastructure.Extensions;
 using EmbeddedPostgres.Infrastructure.Interfaces;
 using Microsoft.Extensions.Logging;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
@@ -46,7 +47,9 @@ internal class PgEnvironmentBuilderLinux : IPgEnvironmentBuilder
 
     /// <summary>
     /// Validates the specified instance directory to ensure it meets the necessary requirements
-    /// for a PostgreSQL instance.
+    /// for a PostgreSQL instance. This method checks the existence of required binaries and
+    /// retrieves their versions, returning a dictionary with binary names as keys and version
+    /// information as values.
     /// </summary>
     /// <param name="instanceDir">
     /// The directory where the PostgreSQL instance is located. This should be a valid path
@@ -57,14 +60,21 @@ internal class PgEnvironmentBuilderLinux : IPgEnvironmentBuilder
     /// is <see cref="CancellationToken.None"/>.
     /// </param>
     /// <returns>
-    /// A task that represents the asynchronous validation operation. The task will complete
-    /// once the validation process has finished.
+    /// A task that represents the asynchronous validation operation, containing a dictionary
+    /// where keys are binary names and values are the respective version information.
     /// </returns>
-    public async Task ValidateAsync(string instanceDir, CancellationToken cancellationToken = default)
+    /// <exception cref="PgValidationException">
+    /// Thrown if validation fails due to a missing binary or an error during version retrieval.
+    /// </exception>
+    public async Task<Dictionary<string, string>> ValidateAsync(string instanceDir, CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        logger.LogInformation($"Validating environment");
+        logger.LogInformation("Validating environment");
 
+        // Dictionary to store binary versions
+        var versions = new Dictionary<string, string>();
+
+        // Iterate over required binaries and capture versions
         await requiredBinaries.ParallelForEachAsync(
             async item =>
             {
@@ -74,16 +84,26 @@ internal class PgEnvironmentBuilderLinux : IPgEnvironmentBuilder
                     var binaryPath = Path.GetFullPath(Path.Combine(instanceDir, item));
                     fileSystem.RequireFile(binaryPath);
 
-                    // Run the binary with --version
+                    // Temporary variable to hold the version output
+                    string versionOutput = null;
+
+                    // Run the binary with --version and capture the output
                     await commandExecutor.ExecuteAsync(
                         binaryPath,
                         ["--version"],
                         outputListener: (line, ct) =>
                         {
-                            logger.LogInformation($"{item} version: {line}");
+                            versionOutput = line;
                             return Task.CompletedTask;
                         },
                         cancellationToken: cancellationToken).ConfigureAwait(false);
+
+                    // Store the version in the dictionary
+                    if (versionOutput != null)
+                    {
+                        versions[Path.GetFileNameWithoutExtension(item)] = versionOutput;
+                        logger.LogInformation($"{item} version: {versionOutput}");
+                    }
                 }
                 catch (Exception e)
                 {
@@ -93,7 +113,9 @@ internal class PgEnvironmentBuilderLinux : IPgEnvironmentBuilder
             cancellationToken: cancellationToken
         ).ConfigureAwait(false);
 
-        logger.LogInformation($"Validation complete!");
+        logger.LogInformation("Validation complete!");
+
+        return versions;
     }
 
     /// <summary>
@@ -139,6 +161,7 @@ internal class PgEnvironmentBuilderLinux : IPgEnvironmentBuilder
 
             SqlController = await GetOptionalControllerAsync<IPgSqlController>("psql", instanceConfig, cancellationToken).ConfigureAwait(false),
             RestoreController = await GetOptionalControllerAsync<IPgRestoreController>("pg_restore", instanceConfig, cancellationToken).ConfigureAwait(false),
+            DumpController = await GetOptionalControllerAsync<IPgDumpController>("pg_dump", instanceConfig, cancellationToken).ConfigureAwait(false),
 
             FileSystem = fileSystem,
             CommandExecutor = commandExecutor,
@@ -150,9 +173,17 @@ internal class PgEnvironmentBuilderLinux : IPgEnvironmentBuilder
         async Task<T> GetOptionalControllerAsync<T>(string binaryPath, PgInstanceConfiguration instanceConfig, CancellationToken cancellationToken)
             where T : class
         {
-            var controller = controllerFactory.GetController<T>(binaryPath, instanceConfig);
-            var version = await (controller as IPgExecutableController).GetVersionAsync(noThrow: true, cancellationToken: cancellationToken).ConfigureAwait(false);
-            return version == null ? null : controller;
+            try
+            {
+                var controller = controllerFactory.GetController<T>(binaryPath, instanceConfig);
+                var version = await (controller as IPgExecutableController).GetVersionAsync(noThrow: true, cancellationToken: cancellationToken).ConfigureAwait(false);
+                return version == null ? null : controller;
+            }
+            catch (Exception e)
+            {
+                logger.LogError(e.Message);
+            }
+            return null;
         }
     }
 
