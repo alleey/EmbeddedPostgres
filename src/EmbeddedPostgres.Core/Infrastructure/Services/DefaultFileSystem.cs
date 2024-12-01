@@ -52,7 +52,7 @@ internal class DefaultFileSystem : IFileSystem
     /// <param name="cancellationToken">A cancellation token for the asynchronous operation.</param>
     public void CopyDirectory(string sourceDir, string destDir)
     {
-        // CreateTargetDatabase the destination directory if it doesn't exist
+        // Create the destination directory if it doesn't exist
         EnsureDirectory(destDir);
 
         // ExtractAsync all files
@@ -100,7 +100,7 @@ internal class DefaultFileSystem : IFileSystem
             }
             else
             {
-                // CreateTargetDatabase the file to act as a marker/sentinel
+                // Create the file to act as a marker/sentinel
                 using (Open(filePath, FileMode.OpenOrCreate)) { }
                 return true;
             }

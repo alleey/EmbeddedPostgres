@@ -29,7 +29,12 @@ class Program
             .Build();
 
         // Run the application
-        await cliApp.RunAsync(["test"]);
+        await cliApp.RunAsync([
+            "instance", 
+            "check", 
+            "--instance-directory",
+            "D:\\Playground\\EmbeddedPostgres\\tests\\EmbeddedPostgres.Tests\\bin\\Debug\\net8.0\\CreateServerAndImportDump"]);
+
         return 0;
     }
 

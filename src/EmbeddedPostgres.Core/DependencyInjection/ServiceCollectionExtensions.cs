@@ -117,7 +117,7 @@ public static class ServiceCollectionExtensions
                 )
             },
 
-            { 
+            {
                 typeof(IPgRestoreController), (string pathOrFilename, PgInstanceConfiguration instance) =>
                 new PgRestoreController(
                     pathOrFilename,
@@ -125,8 +125,19 @@ public static class ServiceCollectionExtensions
                     ctx.GetRequiredService<IFileSystem>(),
                     ctx.GetRequiredService<ICommandExecutor>(),
                     ctx.GetRequiredService<ILoggerFactory>().CreateLogger<PgRestoreController>()
-                ) 
-            }
+                )
+            },
+
+            {
+                typeof(IPgDumpController), (string pathOrFilename, PgInstanceConfiguration instance) =>
+                new PgDumpController(
+                    pathOrFilename,
+                    instance,
+                    ctx.GetRequiredService<IFileSystem>(),
+                    ctx.GetRequiredService<ICommandExecutor>(),
+                    ctx.GetRequiredService<ILoggerFactory>().CreateLogger<PgDumpController>()
+                )
+            },
         });
         services.AddSingleton<PgControllerFactory>();
     }

@@ -334,7 +334,7 @@ public class MinimalServerIntegrationTests
             );
             await pgServer.StartAsync(["primary"], startupParams: PgStartupParams.Default with { Wait = true });
 
-            // CreateTargetDatabase a table and insert some data
+            // Create a table and insert some data
             await pgServer.TestConnectionAsync("primary");
 
             await pgServer.StopAsync(["primary"]);

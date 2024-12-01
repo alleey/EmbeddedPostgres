@@ -34,10 +34,15 @@ public record PgEnvironment
     public IPgSqlController SqlController { get; init; }
 
     /// <summary>
-    /// Gets the SQL client controller used for executing SQL commands against the PostgreSQL database.
+    /// Gets the controller responsible for restoring a PostgreSQL database from a dump.
     /// </summary>
     public IPgRestoreController RestoreController { get; init; }
-        
+
+    /// <summary>
+    /// Gets the controller responsible for creating database dumps in PostgreSQL.
+    /// </summary>
+    public IPgDumpController DumpController { get; init; }
+
     /// <summary>
     /// Provides access to the file system for performing operations such as reading, writing, and managing files and directories.
     /// </summary>

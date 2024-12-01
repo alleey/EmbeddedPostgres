@@ -234,6 +234,30 @@ public class PgDataCluster
     }
 
     /// <summary>
+    /// Exports a PostgreSQL data cluster based on the provided configuration and dump options.
+    /// </summary>
+    /// <param name="options">The options specifying the details of the export process, including destination paths and export parameters.</param>
+    /// <param name="cancellationToken">
+    /// An optional <see cref="CancellationToken"/> to observe while waiting for the export process to complete.
+    /// The default value is <see cref="CancellationToken.None"/>, which represents no cancellation.
+    /// </param>
+    /// <returns>A <see cref="Task"/> that represents the asynchronous export operation.</returns>
+    /// <exception cref="PgCoreException">Thrown when the dump controller is not available in the environment.</exception>
+    /// <exception cref="OperationCanceledException">Thrown when the operation is canceled.</exception>
+    public async Task ExportDumpAsync(PgExportDumpOptions options, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (environment.DumpController == null)
+        {
+            throw new PgCoreException("Minimal environments do not support ExportDump");
+        }
+
+        await RequireRunningStatus(cancellationToken).ConfigureAwait(false);
+        await environment.DumpController.DumpAsync(dataCluster, options, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
     /// Lists the PostgreSQL databases asynchronously.
     /// </summary>
     /// <param name="listener">

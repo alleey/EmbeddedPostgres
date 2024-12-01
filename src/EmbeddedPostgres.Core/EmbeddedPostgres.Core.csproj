@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <Description></Description>
-    <Copyright></Copyright>
+    <Copyright>Shoaib Ali</Copyright>
     <AssemblyTitle>EmbeddedPostgres.Core</AssemblyTitle>
     <Authors>Shoaib Ali</Authors>
     <TargetFrameworks>net8.0</TargetFrameworks>
@@ -16,6 +16,13 @@
     <ProduceReferenceAssembly>False</ProduceReferenceAssembly>
     <Nullable>disable</Nullable>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="CliWrap" Version="3.6.6" />
