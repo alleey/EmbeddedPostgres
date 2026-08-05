@@ -1,4 +1,4 @@
-﻿using EmbeddedPostgres.Core.Interfaces;
+using EmbeddedPostgres.Core.Interfaces;
 
 namespace EmbeddedPostgres;
 
@@ -8,6 +8,23 @@ namespace EmbeddedPostgres;
 public class PgStandardBinaries
 {
     private const string PgVersionLatest = "17.0.0";
+
+    /// <summary>
+    /// EnterpriseDB serves its binaries under a readable, versioned path, for example
+    /// <c>https://get.enterprisedb.com/postgresql/postgresql-17.10-2-windows-x64-binaries.zip</c>.
+    /// The two placeholders are the EnterpriseDB build and the platform suffix.
+    /// </summary>
+    private const string DownloadUrlFormat = "https://get.enterprisedb.com/postgresql/postgresql-{0}-{1}-binaries.zip";
+
+    /// <summary>
+    /// Maps a supported PostgreSQL version to the EnterpriseDB build that serves it.
+    /// Bump the build here to pick up a newer patch release.
+    /// </summary>
+    private static readonly IReadOnlyDictionary<string, string> EdbBuilds = new Dictionary<string, string>
+    {
+        ["17.0.0"] = "17.10-2",
+        ["16.0.0"] = "16.14-1",
+    };
 
     /// <summary>
     /// Gets the latest PostgreSQL artifact for the current platform.
@@ -27,48 +44,14 @@ public class PgStandardBinaries
     /// <exception cref="NotSupportedException">Thrown if the specified PostgreSQL version or platform is unsupported.</exception>
     static public PgArtifact WebArtifact(string pgVersion, PgPlatform platform, bool forceDownload = false)
     {
-        // TODO : Fix/Update this mess
-        return platform switch
+        var target = ResolvePlatform(platform);
+        var build = ResolveBuild(pgVersion);
+
+        return new PgArtifact
         {
-            { Platform: PgPlatform.PlatformWindows, Architecture: PgPlatform.ArchAmd64 } => pgVersion switch
-            {
-                "17.0.0" => new PgArtifact
-                {
-                    Kind = PgArtifactKind.Main,
-                    Source = "https://sbp.enterprisedb.com/getfile.jsp?fileid=1259175",
-                    Force = forceDownload
-                },
-                "16.0.0" => new PgArtifact
-                {
-                    Kind = PgArtifactKind.Main,
-                    Source = "https://sbp.enterprisedb.com/getfile.jsp?fileid=1259178",
-                    Force = forceDownload
-                },
-                _ => throw new NotSupportedException("Unsupported PostgreSQL version for Windows amd64")
-            },
-
-            { Platform: PgPlatform.PlatformDarwin, Architecture: PgPlatform.ArchAmd64 } => pgVersion switch
-            {
-                "17.0.0" => new PgArtifact
-                {
-                    Kind = PgArtifactKind.Main,
-                    Source = "https://sbp.enterprisedb.com/getfile.jsp?fileid=1259171",
-                    Force = forceDownload
-                },
-                "16.0.0" => new PgArtifact
-                {
-                    Kind = PgArtifactKind.Main,
-                    Source = "https://sbp.enterprisedb.com/getfile.jsp?fileid=1259130",
-                    Force = forceDownload
-                },
-                _ => throw new NotSupportedException("Unsupported PostgreSQL version for Darwin amd64")
-            },
-
-            { Platform: PgPlatform.PlatformLinux, Architecture: PgPlatform.ArchAmd64 } => pgVersion switch
-            {
-                _ => throw new NotSupportedException("Unsupported PostgreSQL version for Linux amd64")
-            },
-            _ => throw new NotSupportedException("Unsupported platform architecture")
+            Kind = PgArtifactKind.Main,
+            Source = string.Format(DownloadUrlFormat, build, target),
+            Force = forceDownload
         };
     }
 
@@ -86,4 +69,24 @@ public class PgStandardBinaries
             Source = filePath
         };
     }
+
+    /// <summary>
+    /// Resolves the EnterpriseDB archive suffix for the given platform. EnterpriseDB does not
+    /// publish Linux binaries in this form, so Linux is deliberately unsupported here.
+    /// </summary>
+    private static string ResolvePlatform(PgPlatform platform)
+        => platform switch
+        {
+            { Platform: PgPlatform.PlatformWindows, Architecture: PgPlatform.ArchAmd64 } => "windows-x64",
+            { Platform: PgPlatform.PlatformDarwin, Architecture: PgPlatform.ArchAmd64 } => "osx",
+            _ => throw new NotSupportedException($"Unsupported platform architecture: {platform.Platform}/{platform.Architecture}")
+        };
+
+    /// <summary>
+    /// Resolves the pinned EnterpriseDB build for the given PostgreSQL version.
+    /// </summary>
+    private static string ResolveBuild(string pgVersion)
+        => EdbBuilds.TryGetValue(pgVersion, out var build)
+            ? build
+            : throw new NotSupportedException($"Unsupported PostgreSQL version: {pgVersion}");
 }

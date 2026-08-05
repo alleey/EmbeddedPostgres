@@ -46,9 +46,9 @@ jobs:
           core.setOutput('value', version)
 
     - name: Setup .NET
-      uses: actions/setup-dotnet@v3
+      uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: '8.x'
+        dotnet-version: '10.x'
 
     - name: Build and Test
       run: dotnet build EmbeddedPostgres.sln -c Release -p:AssemblyVersion=${{ steps.metadata.outputs.value }} -p:FileVersion=${{ steps.metadata.outputs.value }}
@@ -57,10 +57,10 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: EmbeddedPostgres.Core-${{ github.ref_name }}-${{ github.sha }}
-        path: src/EmbeddedPostgres.Core/bin/Release/net8.0
+        path: src/EmbeddedPostgres.Core/bin/Release/net10.0
 
     - name: Attach EmbeddedPostgres
       uses: actions/upload-artifact@v4
       with:
         name: EmbeddedPostgres-${{ github.ref_name }}-${{ github.sha }}
-        path: src/EmbeddedPostgres/bin/Release/net8.0
+        path: src/EmbeddedPostgres/bin/Release/net10.0

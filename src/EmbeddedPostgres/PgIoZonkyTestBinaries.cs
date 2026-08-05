@@ -9,7 +9,10 @@ namespace EmbeddedPostgres;
 public class PgIoZonkyTestBinaries
 {
     private const string DefaultMavenRepository = "https://repo1.maven.org/maven2";
-    private const string PgVersionLatest = "17.0.0";
+
+    // Keep in step with the PostgreSQL 17.10 pinned by PgStandardBinaries. Zonky also
+    // publishes an 18.x line, which is a major-version jump rather than a patch bump.
+    private const string PgVersionLatest = "17.10.0";
 
     /// <summary>
     /// Gets the latest PostgreSQL artifact for the current platform from the Zonky repository.

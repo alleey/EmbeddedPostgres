@@ -43,6 +43,17 @@ internal class DefaultFileSystem : IFileSystem
         File.Copy(sourceFileName, destFileName, overwrite);
     }
 
+    /// <summary>
+    /// Moves a file from the source to the destination.
+    /// </summary>
+    /// <param name="sourceFileName">The path of the source file.</param>
+    /// <param name="destFileName">The path of the destination file.</param>
+    /// <param name="overwrite">Whether to overwrite the destination file if it exists; defaults to <c>false</c>.</param>
+    public void MoveFile(string sourceFileName, string destFileName, bool overwrite = false)
+    {
+        File.Move(sourceFileName, destFileName, overwrite);
+    }
+
 
     /// <summary>
     /// Asynchronously copies the content of a stream to a file.
@@ -211,11 +222,13 @@ internal class DefaultFileSystem : IFileSystem
 
     public FileEntryInfo GetFileEntryInfo(string path)
     {
+        var fileInfo = new FileInfo(path);
         return new FileEntryInfo()
         {
             Attributes = File.GetAttributes(path),
             CreationTime = File.GetCreationTime(path),
             LastWriteTime = File.GetLastWriteTime(path),
+            Size = fileInfo.Exists ? fileInfo.Length : 0,
         };
     }
 }

@@ -60,7 +60,8 @@ public record PgDataClusterConfiguration
 
     /// <summary>
     /// Gets or sets the port number on which the PostgreSQL server is listening. 
-    /// Defaults to 0, indicating that the server will choose an ephemeral port.
+    /// Defaults to 0, which is not a usable port: validation rejects it, so callers must set one
+    /// explicitly or pick a free port themselves (see <see cref="Utils.Helpers.GetAvailablePort"/>).
     /// </summary>
     public int Port { get; init; } = 0;
 

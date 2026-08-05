@@ -38,6 +38,11 @@ public record FileEntryInfo
     public FileAttributes Attributes { get; init; }
     public DateTime CreationTime { get; init; }
     public DateTime LastWriteTime { get; init; }
+
+    /// <summary>
+    /// Size of the entry in bytes.
+    /// </summary>
+    public long Size { get; init; }
 }
 
 /// <summary>
@@ -92,6 +97,15 @@ public interface IFileSystem
     /// <param name="destFileName">The path of the destination file.</param>
     /// <param name="overwrite">Whether to overwrite the destination file if it exists; defaults to <c>false</c>.</param>
     void CopyFile(string sourceFileName, string destFileName, bool overwrite = false);
+
+    /// <summary>
+    /// Moves a file from the source to the destination. On the same volume this is atomic,
+    /// which makes it safe for publishing a fully written temporary file into its final location.
+    /// </summary>
+    /// <param name="sourceFileName">The path of the source file.</param>
+    /// <param name="destFileName">The path of the destination file.</param>
+    /// <param name="overwrite">Whether to overwrite the destination file if it exists; defaults to <c>false</c>.</param>
+    void MoveFile(string sourceFileName, string destFileName, bool overwrite = false);
 
     /// <summary>
     /// Copies all contents of a directory to a new destination directory.

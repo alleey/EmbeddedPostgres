@@ -45,27 +45,32 @@ jobs:
           core.setOutput('value', version)
 
     - name: Setup .NET
-      uses: actions/setup-dotnet@v3
+      uses: actions/setup-dotnet@v4
       with:
-        dotnet-version: '8.x'
+        dotnet-version: '10.x'
 
     - name: Run Pack
-      run: dotnet pack EmbeddedPostgres.sln -c Release -p:AssemblyVersion=${{ steps.metadata.outputs.value }} -p:FileVersion=${{ steps.metadata.outputs.value }}
+      run: dotnet pack EmbeddedPostgres.sln -c Release -p:Version=${{ steps.metadata.outputs.value }} -p:AssemblyVersion=${{ steps.metadata.outputs.value }} -p:FileVersion=${{ steps.metadata.outputs.value }}
 
     - name: Publish to NuGet
       run: |
-        find . -name 'EmbeddedPostgres.Core*.nupkg' -exec dotnet nuget push "{}" -s https://api.nuget.org/v3/index.json -k ${{ secrets.NUGET_API_KEY }} --skip-duplicate \;
-        find . -name 'EmbeddedPostgres*.nupkg' -exec dotnet nuget push "{}" -s https://api.nuget.org/v3/index.json -k ${{ secrets.NUGET_API_KEY }} --skip-duplicate \;
+        find . -path '*/bin/Release/*' -name '*.nupkg' -print -exec dotnet nuget push "{}" -s https://api.nuget.org/v3/index.json -k ${{ secrets.NUGET_API_KEY }} --skip-duplicate \;
       shell: bash
 
     - name: Attach EmbeddedPostgres.Core
       uses: actions/upload-artifact@v4
       with:
         name: EmbeddedPostgres.Core-v${{ steps.metadata.outputs.value }}
-        path: src/EmbeddedPostgres.Core/bin/Release/net8.0
+        path: src/EmbeddedPostgres.Core/bin/Release/net10.0
 
     - name: Attach EmbeddedPostgres
       uses: actions/upload-artifact@v4
       with:
         name: EmbeddedPostgres-v${{ steps.metadata.outputs.value }}
-        path: src/EmbeddedPostgres/bin/Release/net8.0
+        path: src/EmbeddedPostgres/bin/Release/net10.0
+
+    - name: Attach empg tool package
+      uses: actions/upload-artifact@v4
+      with:
+        name: empg-v${{ steps.metadata.outputs.value }}
+        path: src/EmbeddedPostgres.Cli/bin/Release/*.nupkg

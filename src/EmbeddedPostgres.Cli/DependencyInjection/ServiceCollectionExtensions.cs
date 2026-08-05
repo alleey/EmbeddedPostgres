@@ -1,5 +1,6 @@
 using CliFx;
 using EmbeddedPostgres.Cli;
+using EmbeddedPostgres.Cli.Context;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace EmbeddedPostgres.DependencyInjection;
@@ -8,6 +9,8 @@ public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddEmbeddedPostgresCliServices(this IServiceCollection services)
     {
+        services.AddSingleton<IEmpgContextResolver, EmpgContextResolver>();
+        services.AddSingleton<IEmpgServerFactory, EmpgServerFactory>();
         services.AddCliCommandsFromThisAssembly();
         return services;
     }

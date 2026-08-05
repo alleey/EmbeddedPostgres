@@ -27,11 +27,11 @@ internal class SharpFileExtractor : IFileExtractor
     public IEnumerable<ArchiveEntry> Enumerate(string source)
     {
         using var stream = fileSystem.Open(source, FileMode.Open, FileAccess.Read);
-        using var reader = ReaderFactory.Open(stream);
+        using var reader = ReaderFactory.OpenReader(stream);
 
         while (reader.MoveToNextEntry())
         {
-            yield return new ArchiveEntry 
+            yield return new ArchiveEntry
             {
                 Key = reader.Entry.Key,
                 IsDirectory = reader.Entry.IsDirectory,
@@ -70,7 +70,7 @@ internal class SharpFileExtractor : IFileExtractor
         var symbolicLinks = new Dictionary<string, string>();
 
         using var stream = fileSystem.Open(source, FileMode.Open, FileAccess.Read);
-        using var reader = ReaderFactory.Open(stream);
+        using var reader = ReaderFactory.OpenReader(stream);
 
         while (reader.MoveToNextEntry())
         {

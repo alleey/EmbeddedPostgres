@@ -10,7 +10,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using TinyCsvParser;
-using TinyCsvParser.Mapping;
+using TinyCsvParser.Models;
 
 namespace EmbeddedPostgres.Core.Controllers;
 
@@ -96,17 +96,22 @@ internal class PgSqlController : IPgSqlController
 
         try
         {
-            var csvParserOptions = new CsvParserOptions(skipHeader: false, fieldsSeparator: ',');
-            var csvParser = new CsvParser<PgDatabaseInfo>(csvParserOptions, new PgDatabaseInfoMapping());
-            var csvReaderOptions = new CsvReaderOptions(new[] { "\n" });
+            CsvOptions options = new(
+                Delimiter: ',',
+                QuoteChar: '"',
+                EscapeChar: '"',
+                SkipHeader: false,
+                CommentCharacter: '#'
+            );
 
+            var csvParser = new CsvParser<PgDatabaseInfo>(options, new PgDatabaseInfoMapping());
             var result = await commandExecutor.ExecuteAsync(
                 psqlPath,
                 args,
                 outputListener: async (line, ct) =>
                 {
-                    var record = csvParser.ReadFromString(csvReaderOptions, line).FirstOrDefault();
-                    if (record.IsValid)
+                    var record = csvParser.ReadFromString(line).FirstOrDefault();
+                    if (record.IsSuccess)
                     {
                         await listener(record.Result, ct).ConfigureAwait(false);
                     }
@@ -122,6 +127,9 @@ internal class PgSqlController : IPgSqlController
         string[] BuildArguments()
         {
             string[] args = [
+                // Never prompt: these tools run without a console of their own, so a password
+                // prompt would block forever instead of reporting an authentication failure.
+                "-w",
                 "-U", dataCluster.Superuser,
                 "-h", dataCluster.Host,
                 "-p", $"{dataCluster.Port}",
@@ -224,25 +232,43 @@ internal class PgSqlController : IPgSqlController
         ArgumentException.ThrowIfNullOrEmpty(sqlOrPath, nameof(sqlOrPath));
         cancellationToken.ThrowIfCancellationRequested();
 
-        var args = BuildArguments(format ?? PgSqlResultFormat.Default);
+        // Resolve the default once: callers routinely leave format unset, and dereferencing the
+        // raw parameter below would then throw.
+        var resolvedFormat = format ?? PgSqlResultFormat.Default;
+        var args = BuildArguments(resolvedFormat);
+
+        // psql explains failures on stderr — "password authentication failed", a syntax error and
+        // so on. Without capturing it the caller is left with nothing but an exit code.
+        var diagnostics = new List<string>();
 
         try
         {
             var result = await commandExecutor.ExecuteAsync(
                 psqlPath,
                 args,
-                outputListener: string.IsNullOrEmpty(format.OutputFile) ? listener : null,
+                outputListener: string.IsNullOrEmpty(resolvedFormat.OutputFile) ? listener : null,
+                errorListener: (line, ct) =>
+                {
+                    if (!string.IsNullOrWhiteSpace(line))
+                    {
+                        diagnostics.Add(line.Trim());
+                    }
+                    return Task.CompletedTask;
+                },
                 cancellationToken: cancellationToken
             ).ConfigureAwait(false);
         }
         catch (PgCommandExecutionException ex)
         {
-            throw new PgCoreException(ex.Message);
+            throw new PgCoreException(
+                diagnostics.Count > 0 ? string.Join(Environment.NewLine, diagnostics) : ex.Message);
         }
 
         List<string> BuildArguments(PgSqlResultFormat fmt)
         {
             List<string> args = [
+                // See above: prompting is never usable from a spawned process.
+                "-w",
                 "-U", string.IsNullOrEmpty(userName) ? dataCluster.Superuser : userName,
                 "-h", dataCluster.Host,
                 "-p", $"{dataCluster.Port}",

@@ -53,7 +53,7 @@ namespace EmbeddedPostgres.Core.Services.Tests
             var buildTask = builder.BuildAsync(artifacts, CancellationToken.None);
 
             // Assert
-            await Assert.ThrowsExceptionAsync<PgValidationException>(() => buildTask);
+            await Assert.ThrowsExactlyAsync<PgValidationException>(() => buildTask);
         }
 
         [TestMethod()]

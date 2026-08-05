@@ -5,10 +5,10 @@
     <Copyright>Shoaib Ali</Copyright>
     <AssemblyTitle>EmbeddedPostgres.Core</AssemblyTitle>
     <Authors>Shoaib Ali</Authors>
-    <TargetFrameworks>net8.0</TargetFrameworks>
+    <TargetFrameworks>net10.0</TargetFrameworks>
     <AssemblyName>$(MSBuildProjectName)</AssemblyName>
     <PackageId>EmbeddedPostgres.Core</PackageId>
-    <PackageTags>postgres;postgresql;pg;embed;embedded;server;.net 8;net 8.0;.net core;.net;</PackageTags>
+    <PackageTags>postgres;postgresql;pg;embed;embedded;server;.net 10;net 10.0;.net core;.net;</PackageTags>
     <PackageProjectUrl>https://github.com/alleey/EmbeddedPostgres</PackageProjectUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
@@ -25,10 +25,10 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="CliWrap" Version="3.6.6" />
-    <PackageReference Include="Microsoft.Extensions.Http" Version="8.0.1" />
-    <PackageReference Include="Microsoft.Extensions.Http.Polly" Version="8.0.10" />
-    <PackageReference Include="SharpCompress" Version="0.38.0" />
-    <PackageReference Include="TinyCsvParser" Version="2.7.0" />
+    <PackageReference Include="CliWrap" Version="3.10.4" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="10.0.10" />
+    <PackageReference Include="Microsoft.Extensions.Http.Polly" Version="10.0.10" />
+    <PackageReference Include="SharpCompress" Version="0.50.3" />
+    <PackageReference Include="TinyCsvParser" Version="3.0.11" />
   </ItemGroup>
 </Project>

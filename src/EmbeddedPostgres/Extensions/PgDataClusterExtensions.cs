@@ -14,10 +14,41 @@ public static class PgDataClusterExtensions
     }
 
     public static void WaitForStartup(this PgDataCluster server, int waitTimeoutMs = 30000)
-        => Helpers.WaitForServerStartup(server.Settings.Host, server.Settings.Port);
+        => Helpers.WaitForServerStartup(ReadinessProbeHost(server.Settings), server.Settings.Port, waitTimeoutMs);
 
     public static void WaitForStartup(this PgDataClusterConfiguration config, int waitTimeoutMs = 30000)
-        => Helpers.WaitForServerStartup(config.Host, config.Port);
+        => Helpers.WaitForServerStartup(ReadinessProbeHost(config), config.Port, waitTimeoutMs);
+
+    /// <summary>
+    /// The address to poll when waiting for a cluster to accept connections.
+    /// </summary>
+    /// <remarks>
+    /// <see cref="PgDataClusterConfiguration.Host"/> is where clients are told to connect, which is
+    /// not necessarily where the server binds: binding is governed by <c>listen_addresses</c>.
+    /// Polling the advertised host means that on a multi-homed machine the readiness check can
+    /// never succeed even though the server started perfectly well, so the bind address wins when
+    /// one is configured.
+    /// </remarks>
+    private static string ReadinessProbeHost(PgDataClusterConfiguration config)
+    {
+        if (!config.Parameters.TryGetValue("listen_addresses", out var configured))
+        {
+            // No explicit binding: PostgreSQL listens on loopback, whatever Host advertises.
+            return "localhost";
+        }
+
+        var first = configured?.ToString()?
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .FirstOrDefault();
+
+        if (string.IsNullOrEmpty(first))
+        {
+            return "localhost";
+        }
+
+        // Wildcards mean "every interface", which always includes loopback.
+        return first is "*" or "0.0.0.0" or "::" ? "localhost" : first;
+    }
 
     /// <summary>
     /// Returns the full path of the instance directory specified in the <paramref name="configuration"/>.

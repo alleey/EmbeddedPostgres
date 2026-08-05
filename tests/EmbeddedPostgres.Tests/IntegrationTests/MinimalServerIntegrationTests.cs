@@ -77,7 +77,7 @@ public class MinimalServerIntegrationTests
                 builder.InstanceDirectory = "CreateServerAndGISExtensionExecuteSql";
                 builder.ServerArtifact = PgIoZonkyTestBinaries.Latest(forceDownload: false);
                 builder.CleanInstall = true;
-                builder.AddPostgresExtension("https://download.osgeo.org/postgis/windows/pg17/postgis-bundle-pg17-3.5.0x64.zip");
+                builder.AddPostgresExtension("https://download.osgeo.org/postgis/windows/pg17/postgis-bundle-pg17-3.6.2x64.zip");
                 builder.AddDataCluster(cluster =>
                 {
                     cluster.UniqueId = "primary";
@@ -156,7 +156,7 @@ public class MinimalServerIntegrationTests
                         // Open first connection
                         await conn.OpenAsync();
 
-                        var exception = await Assert.ThrowsExceptionAsync<Npgsql.PostgresException>(async () =>
+                        var exception = await Assert.ThrowsExactlyAsync<Npgsql.PostgresException>(async () =>
                         {
                             // Try to open 4 additional connections
                             Npgsql.NpgsqlConnection[] connections = [

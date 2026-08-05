@@ -105,6 +105,8 @@ internal class PgRestoreController : IPgRestoreController
         List<string> BuildArguments(PgDataClusterConfiguration dataCluster, PgRestoreDumpOptions options)
         {
             List<string> args = [
+                // Fail with an authentication error rather than blocking on a password prompt.
+                "-w",
                 "-U", string.IsNullOrEmpty(options.RunAsUser) ? dataCluster.Superuser : options.RunAsUser,
                 "-h", dataCluster.Host,
                 "-p", $"{dataCluster.Port}",

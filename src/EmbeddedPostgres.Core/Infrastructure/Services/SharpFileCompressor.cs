@@ -48,7 +48,7 @@ internal class SharpFileCompressor : IFileCompressor
         return Task.Run(() =>
         {
             using var stream = fileSystem.Open(destFile, FileMode.Create, FileAccess.Write, FileShare.None);
-            using var writer = WriterFactory.Open(stream, ArchiveType.Zip, CompressionType.LZMA);
+            using var writer = WriterFactory.OpenWriter(stream, ArchiveType.Zip, WriterOptions.ForZip(CompressionType.LZMA));
             var rootDir = includeRootDir ? Path.GetDirectoryName(source) : source;
 
             if (fileSystem.CheckPath(source) == PathType.File)

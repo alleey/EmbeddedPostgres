@@ -25,7 +25,9 @@ public static class Helpers
             return false;
         }
 
-        Stopwatch watch = new Stopwatch();
+        // The stopwatch has to be running for the deadline below to advance; leaving it unstarted
+        // pins ElapsedMilliseconds at zero and turns this into an unbounded loop.
+        Stopwatch watch = Stopwatch.StartNew();
         while (watch.ElapsedMilliseconds < waitTimeoutMs)
         {
             // verify if server ready

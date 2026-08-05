@@ -229,7 +229,7 @@ public class PgDataCluster
             throw new PgCoreException("Minimal environments do not support ImportDump");
         }
 
-        await RequireRunningStatus(cancellationToken).ConfigureAwait(false);
+        await RequireRunningStatusAsync(cancellationToken).ConfigureAwait(false);
         await environment.RestoreController.RestoreAsync(dataCluster, options, cancellationToken).ConfigureAwait(false);
     }
 
@@ -253,7 +253,7 @@ public class PgDataCluster
             throw new PgCoreException("Minimal environments do not support ExportDump");
         }
 
-        await RequireRunningStatus(cancellationToken).ConfigureAwait(false);
+        await RequireRunningStatusAsync(cancellationToken).ConfigureAwait(false);
         await environment.DumpController.DumpAsync(dataCluster, options, cancellationToken).ConfigureAwait(false);
     }
 
@@ -285,7 +285,7 @@ public class PgDataCluster
             throw new PgCoreException("Minimal environments do not support ListDatabases");
         }
 
-        await RequireRunningStatus(cancellationToken).ConfigureAwait(false);
+        await RequireRunningStatusAsync(cancellationToken).ConfigureAwait(false);
         await environment.SqlController.ListDatabasesAsync(dataCluster, listener, cancellationToken).ConfigureAwait(false);
     }
 
@@ -327,7 +327,7 @@ public class PgDataCluster
             throw new PgCoreException("Minimal environments do not support ExecuteSql");
         }
 
-        await RequireRunningStatus(cancellationToken).ConfigureAwait(false);
+        await RequireRunningStatusAsync(cancellationToken).ConfigureAwait(false);
         await environment.SqlController.ExecuteSqlAsync(
             dataCluster,
             sql,
@@ -376,7 +376,7 @@ public class PgDataCluster
             throw new PgCoreException("Minimal environments do not support ExecuteFile");
         }
 
-        await RequireRunningStatus(cancellationToken).ConfigureAwait(false);
+        await RequireRunningStatusAsync(cancellationToken).ConfigureAwait(false);
         await environment.SqlController.ExecuteFileAsync(
             dataCluster,
             filePath,
@@ -387,7 +387,7 @@ public class PgDataCluster
             cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
-    private async Task RequireRunningStatus(CancellationToken cancellationToken = default)
+    private async Task RequireRunningStatusAsync(CancellationToken cancellationToken = default)
     {
         var status = await GetStatusAsync(cancellationToken).ConfigureAwait(false);
         if (status.IsValid)

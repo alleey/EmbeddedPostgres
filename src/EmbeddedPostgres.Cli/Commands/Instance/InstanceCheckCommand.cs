@@ -1,50 +1,56 @@
-﻿using CliFx;
-using CliFx.Attributes;
+using CliFx.Binding;
 using CliFx.Infrastructure;
+using EmbeddedPostgres.Cli.Context;
+using EmbeddedPostgres.Cli.Output;
 using EmbeddedPostgres.Core.Interfaces;
 
 namespace EmbeddedPostgres.Cli.Commands.Instance;
 
-[Command("instance check")]
-public class InstanceCheckCommand : ICommand
+/// <summary>
+/// Verifies that the instance's PostgreSQL binaries are present and usable.
+/// </summary>
+[Command("instance check", Description = "Verify the instance's PostgreSQL binaries.")]
+public partial class InstanceCheckCommand : EmpgCommandBase
 {
+    private readonly IEmpgContextResolver contextResolver;
     private readonly IPgEnvironmentBuilder environmentBuilder;
 
-    public InstanceCheckCommand(IPgEnvironmentBuilder environmentBuilder)
+    public InstanceCheckCommand(IEmpgContextResolver contextResolver, IPgEnvironmentBuilder environmentBuilder)
     {
+        this.contextResolver = contextResolver;
         this.environmentBuilder = environmentBuilder;
     }
 
-    [CommandOption("instance-directory", 'i', Description = "Directory for the PostgreSQL instance.")]
-    public string InstanceDirectory { get; init; } = "postgres-test";
-
-    public async ValueTask ExecuteAsync(IConsole console)
+    protected override async ValueTask ExecuteAsync(IConsole console, OutputWriter output)
     {
-        try
-        {
-            var env = await environmentBuilder.ValidateAsync(InstanceDirectory);
-            if (env.Count != 3)
-            {
-                using (console.WithForegroundColor(ConsoleColor.Yellow))
-                {
-                    await console.Output.WriteLineAsync($"Could not find a valid Postgres instance in the folder {InstanceDirectory}");
-                }
-                return;
-            }
+        var context = contextResolver.Resolve(Selector);
 
-            using (console.WithForegroundColor(ConsoleColor.Green))
-            {
-                console.Output.WriteLine($"Found a valid Postgres instance in the folder {InstanceDirectory}");
-                foreach (var item in env)
-                {
-                    await console.Output.WriteLineAsync($"{item.Key} Version: {item.Value}");
-                }
-            }
-        }
-        catch (Exception ex)
+        var binaries = await environmentBuilder
+            .ValidateAsync(context.InstanceDirectory, console.RegisterCancellationHandler())
+            .ConfigureAwait(false);
+
+        // The environment builder reports the three executables an instance needs to be usable.
+        const int RequiredBinaryCount = 3;
+        var healthy = binaries.Count == RequiredBinaryCount;
+
+        await output.JsonAsync(new
         {
-            await console.Error.WriteLineAsync(ex.Message);
+            instance = context.InstanceDirectory,
+            healthy,
+            binaries,
+        }).ConfigureAwait(false);
+
+        if (!healthy)
+        {
+            throw new EmpgException(
+                $"Instance at {context.InstanceDirectory} is incomplete: found {binaries.Count} of {RequiredBinaryCount} required binaries. " +
+                "Reinstall with `empg instance create --force`.");
         }
 
+        await output.TableAsync(
+            ["BINARY", "VERSION"],
+            binaries.Select(b => (IReadOnlyList<string>)new[] { b.Key, b.Value }).ToList()).ConfigureAwait(false);
+
+        await output.SuccessAsync($"Instance at {context.InstanceDirectory} is healthy.").ConfigureAwait(false);
     }
 }
