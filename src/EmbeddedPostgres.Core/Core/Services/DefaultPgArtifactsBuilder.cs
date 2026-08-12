@@ -80,9 +80,12 @@ internal class DefaultPgArtifactsBuilder  : IPgArtifactsBuilder
     /// <exception cref="PgValidationException"></exception>
     private void ValidateLocalArtifacts(IEnumerable<PgArtifact> artifacts)
     {
-        if (!artifacts.Any(item => item.Kind == PgArtifactKind.Main))
+        // A main archive is not required: installing an extension over an instance that already has its
+        // server binaries is a legitimate set of artifacts. Whether the resulting instance is usable is
+        // settled afterwards by validating the binaries, not guessed at here.
+        if (!artifacts.Any())
         {
-            throw new PgValidationException($"Main set of binaries for Postgres wan't specified");
+            throw new PgValidationException($"No artifacts were specified");
         }
 
         var extensions = artifacts.Where(item => item.Kind != PgArtifactKind.Main);

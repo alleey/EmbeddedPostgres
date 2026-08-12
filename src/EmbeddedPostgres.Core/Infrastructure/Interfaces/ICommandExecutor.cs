@@ -50,11 +50,21 @@ public interface ICommandExecutor
     /// <param name="errorListener">
     /// An optional listener for error messages. It is recommended to use this only if the process is guaranteed to exit.
     /// </param>
+    /// <param name="leavesBackgroundProcess">
+    /// Indicates that the command leaves a long-lived process behind after it exits, as <c>pg_ctl start</c>
+    /// leaves the server running. See the remarks for why such commands need separate handling.
+    /// </param>
     /// <param name="cancellationToken">A cancellation token to signal cancellation of the command execution.</param>
     /// <returns>A task representing the asynchronous operation, with a result of type <see cref="ExecuteResult"/>.</returns>
     /// <remarks>
-    /// Do not use the <paramref name="outputListener"/> and <paramref name="errorListener"/> unless the process is guaranteed to 
-    /// exit. For example, <c>pg_ctl start</c> may hang if its output is captured, possibly due to output handles kept open by child processes.
+    /// Do not use the <paramref name="outputListener"/> and <paramref name="errorListener"/> unless the process is guaranteed to
+    /// exit. For example, <c>pg_ctl start</c> may hang if its output is captured, because the server it leaves
+    /// running holds the output handles open, so end-of-stream never arrives.
+    /// <para>
+    /// Set <paramref name="leavesBackgroundProcess"/> for those commands. Not capturing their output is not enough:
+    /// the server would then inherit this process's own stdout and stderr and hold those open instead, which hangs
+    /// whoever is reading our output rather than us.
+    /// </para>
     /// </remarks>
     Task<ExecuteResult> ExecuteAsync(
         string binaryPath,
@@ -64,5 +74,6 @@ public interface ICommandExecutor
         bool validateNonZeroExitCode = true,
         Func<string, CancellationToken, Task> outputListener = default,
         Func<string, CancellationToken, Task> errorListener = default,
+        bool leavesBackgroundProcess = false,
         CancellationToken cancellationToken = default);
 }

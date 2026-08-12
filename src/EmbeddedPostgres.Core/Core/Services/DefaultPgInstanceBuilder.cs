@@ -117,21 +117,26 @@ internal class DefaultPgInstanceBuilder : IPgInstanceBuilder
     {
         cancellationToken.ThrowIfCancellationRequested();
 
-        var pgServer = downloaded.Where(item => item.Kind == PgArtifactKind.Main).First();
-        var extractor = extractorFactory.ForExtractionStrategy(pgServer.ExtractionStrategy);
-
         fileSystem.EnsureDirectory(instanceDirectory);
 
-        // Excluding pgAdmin extraction can save ~650Mb of disk space
-        Func<ArchiveEntry, bool> excludePgAdminPredicate = item => item.Key.StartsWith("pgsql/pgAdmin");
-        await extractor.ExtractAsync(
-            pgServer.Source,
-            instanceDirectory,
-            excludePredicate: excludePgAdmin ? excludePgAdminPredicate : null,
-            ignoreRootDir: true,
-            cancellationToken: cancellationToken).ConfigureAwait(false);
+        // Installing extensions over an instance that already has its server binaries is a normal
+        // operation, so a set of artifacts carrying no main archive is valid rather than an error.
+        var pgServer = downloaded.FirstOrDefault(item => item.Kind == PgArtifactKind.Main);
+        if (pgServer != null)
+        {
+            var extractor = extractorFactory.ForExtractionStrategy(pgServer.ExtractionStrategy);
 
-        logger.LogInformation($"Extracted {pgServer.Source} into {instanceDirectory}");
+            // Excluding pgAdmin extraction can save ~650Mb of disk space
+            Func<ArchiveEntry, bool> excludePgAdminPredicate = item => item.Key.StartsWith("pgsql/pgAdmin");
+            await extractor.ExtractAsync(
+                pgServer.Source,
+                instanceDirectory,
+                excludePredicate: excludePgAdmin ? excludePgAdminPredicate : null,
+                ignoreRootDir: true,
+                cancellationToken: cancellationToken).ConfigureAwait(false);
+
+            logger.LogInformation($"Extracted {pgServer.Source} into {instanceDirectory}");
+        }
 
         // Install all extensions, lets do that in parallel
         var extensions = downloaded.Where(item => item.Kind != PgArtifactKind.Main);
@@ -140,47 +145,88 @@ internal class DefaultPgInstanceBuilder : IPgInstanceBuilder
             cancellationToken.ThrowIfCancellationRequested();
 
             var extractor = extractorFactory.ForExtractionStrategy(item.ExtractionStrategy);
-            var containerFolderInBinary = GetContainerFolderInBinary(item.Source, extractor);
-            var ignoreRootFolder = !string.IsNullOrEmpty(containerFolderInBinary);
+            var layout = ResolveExtensionLayout(item.Source, extractor);
 
             await extractor.ExtractAsync(
                 item.Source,
                 instanceDirectory,
-                excludePredicate: item => !item.Key.StartsWith(containerFolderInBinary),
-                ignoreRootFolder,
+                excludePredicate: layout.BuildExcludePredicate(),
+                layout.HasContainerFolder,
                 cancellationToken: cancellationToken).ConfigureAwait(false);
 
-            logger.LogInformation($"Extracted {item.Source} into {instanceDirectory}");
+            logger.LogInformation($"Extracted {layout.FileCount} files from {item.Source} into {instanceDirectory}");
 
         }, cancellationToken: cancellationToken).ConfigureAwait(false);
     }
 
     /// <summary>
-    /// 
+    /// Where an extension archive keeps the files that belong in the instance, and how many there are.
     /// </summary>
-    /// <param name="zipFile"></param>
-    /// <param name="extractor"></param>
-    /// <returns></returns>
-    private string GetContainerFolderInBinary(string zipFile, IFileExtractor extractor)
+    /// <param name="ContainerFolder">
+    /// The single root folder the payload sits under, or an empty string when it sits at the archive root.
+    /// </param>
+    /// <param name="FileCount">Number of files that will be extracted.</param>
+    private sealed record ExtensionLayout(string ContainerFolder, int FileCount)
     {
-        //some of the extension binaries may have a root folder which need to be ignored while extracting content
-        var containerFolder = "";
+        public bool HasContainerFolder => !string.IsNullOrEmpty(ContainerFolder);
 
-        var item = extractor
-            .Enumerate(zipFile)
-            .Where(entry => entry.Key.EndsWith("/bin/") || entry.Key.EndsWith("/lib/") || entry.Key.EndsWith("/share/"))
-            .Select(entry => entry.Key)
-            .FirstOrDefault();
-
-        if (item == null)
-            return containerFolder;
-
-        var parts = item.Split('/');
-        if (parts.Length > 1)
+        /// <summary>
+        /// Keeps only the payload. A null predicate takes the archive whole, which is what an archive
+        /// with no wrapping folder needs.
+        /// </summary>
+        public Func<ArchiveEntry, bool> BuildExcludePredicate()
         {
-            containerFolder = parts[0];
+            if (!HasContainerFolder)
+            {
+                return null;
+            }
+
+            var prefix = ContainerFolder + "/";
+            return entry => !entry.Key.StartsWith(prefix);
+        }
+    }
+
+    /// <summary>
+    /// Works out where an extension archive keeps the directories PostgreSQL expects, so the payload
+    /// lands merged into the instance rather than nested inside a stray folder.
+    /// </summary>
+    /// <remarks>
+    /// The layout is settled from the paths of the entries themselves rather than from directory entries,
+    /// which many archives omit entirely. An archive whose payload cannot be located is rejected instead
+    /// of extracted: unpacking it somewhere PostgreSQL will not look would otherwise be reported as a
+    /// successful install and only show up later as a missing extension.
+    /// </remarks>
+    /// <exception cref="PgCoreException">Thrown when the archive holds no recognisable payload.</exception>
+    private ExtensionLayout ResolveExtensionLayout(string source, IFileExtractor extractor)
+    {
+        static bool IsPayloadDirectory(string segment)
+            => segment is "bin" or "lib" or "share";
+
+        var keys = extractor
+            .Enumerate(source)
+            .Where(entry => entry.HasKey)
+            .Select(entry => new { entry.Key, Segments = entry.Key.Split('/', StringSplitOptions.RemoveEmptyEntries), entry.IsDirectory })
+            .ToList();
+
+        // Payload at the archive root, for example "lib/postgis-3.dll".
+        if (keys.Any(entry => entry.Segments.Length > 1 && IsPayloadDirectory(entry.Segments[0])))
+        {
+            return new ExtensionLayout(string.Empty, keys.Count(entry => !entry.IsDirectory));
         }
 
-        return containerFolder;
+        // Payload under a single wrapping folder, for example "postgis-bundle-pg17/lib/postgis-3.dll".
+        var container = keys
+            .Where(entry => entry.Segments.Length > 2 && IsPayloadDirectory(entry.Segments[1]))
+            .Select(entry => entry.Segments[0])
+            .FirstOrDefault();
+
+        if (container != null)
+        {
+            var prefix = container + "/";
+            return new ExtensionLayout(container, keys.Count(entry => !entry.IsDirectory && entry.Key.StartsWith(prefix)));
+        }
+
+        throw new PgCoreException(
+            $"{source} does not look like a PostgreSQL extension archive: no bin, lib or share directory was found in it.");
     }
 }

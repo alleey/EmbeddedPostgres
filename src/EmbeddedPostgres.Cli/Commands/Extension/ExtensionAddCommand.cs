@@ -2,6 +2,10 @@ using CliFx.Binding;
 using CliFx.Infrastructure;
 using EmbeddedPostgres.Cli.Context;
 using EmbeddedPostgres.Cli.Output;
+using EmbeddedPostgres.Core;
+using EmbeddedPostgres.Core.Interfaces;
+using EmbeddedPostgres.Extensions;
+using EmbeddedPostgres.Utils;
 
 namespace EmbeddedPostgres.Cli.Commands.Extension;
 
@@ -12,17 +16,29 @@ namespace EmbeddedPostgres.Cli.Commands.Extension;
 public partial class ExtensionAddCommand : EmpgCommandBase
 {
     private readonly IEmpgContextResolver contextResolver;
-    private readonly PgServerBuilder serverBuilder;
+    private readonly IPgInstanceBuilder instanceBuilder;
 
-    public ExtensionAddCommand(IEmpgContextResolver contextResolver, PgServerBuilder serverBuilder)
+    public ExtensionAddCommand(IEmpgContextResolver contextResolver, IPgInstanceBuilder instanceBuilder)
     {
         this.contextResolver = contextResolver;
-        this.serverBuilder = serverBuilder;
+        this.instanceBuilder = instanceBuilder;
     }
 
     [CommandParameter(0, Name = "source", Description = "URL or local path of the extension archive.")]
     public required string Source { get; set; }
 
+    /// <summary>
+    /// Unpacks the extension over the existing installation.
+    /// </summary>
+    /// <remarks>
+    /// This goes through <see cref="IPgInstanceBuilder"/> rather than <see cref="PgServerBuilder"/> for two
+    /// reasons. The latter requires at least one data cluster, which installing binaries has no need of; and
+    /// it treats a working installation as nothing left to do, which silently skips the extension entirely.
+    /// <para>
+    /// Only the named extension is installed. Extensions already recorded in the manifest are left alone
+    /// rather than unpacked again, so adding one does not re-extract every archive added before it.
+    /// </para>
+    /// </remarks>
     protected override async ValueTask ExecuteAsync(IConsole console, OutputWriter output)
     {
         var cancellationToken = console.RegisterCancellationHandler();
@@ -35,29 +51,32 @@ public partial class ExtensionAddCommand : EmpgCommandBase
 
         await output.InfoAsync($"Installing extension {Source} ...").ConfigureAwait(false);
 
-        // Reinstalling over the existing instance is what unpacks the extension alongside the
-        // server binaries. CleanInstall stays false so existing cluster data is left alone.
-        await serverBuilder.BuildAsync(
-            options =>
-            {
-                options.InstanceDirectory = context.InstanceDirectory;
-                options.CacheDirectory = context.CacheDirectory;
-                options.CleanInstall = false;
+        var options = new PgInstanceBuilderOptions
+        {
+            InstanceDirectory = context.InstanceDirectory,
+            CleanInstall = false,
+        };
 
-                if (!string.IsNullOrWhiteSpace(context.Manifest.ServerArtifact))
-                {
-                    options.ServerBinaries = context.Manifest.ServerArtifact;
-                }
+        // Mirrors what provisioning applies, so files unpacked here are executable on Linux too.
+        options.PlatformParameters[PgKnownParameters.Linux.SetExecutableAttributes] = true;
 
-                foreach (var existing in context.Manifest.Extensions)
-                {
-                    options.AddPostgresExtension(existing);
-                }
+        var installationSource = new PgInstallationSource(context.CacheDirectory);
 
-                options.AddPostgresExtension(Source);
-            },
-            cancellationToken).ConfigureAwait(false);
+        if (PathChecker.IsLocalPath(Source))
+        {
+            installationSource.UseLocalExtension(Source);
+        }
+        else
+        {
+            installationSource.UseWebExtension(Source);
+        }
 
+        await instanceBuilder
+            .BuildAsync(options, installationSource.Build(), cancellationToken)
+            .ConfigureAwait(false);
+
+        // Recorded only once the archive has actually been unpacked, so `extension list` cannot claim
+        // an extension that never made it onto disk.
         context.Manifest.Extensions.Add(Source);
         context.Save();
 

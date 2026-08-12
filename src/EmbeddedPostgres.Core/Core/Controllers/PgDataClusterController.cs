@@ -175,6 +175,8 @@ internal class PgDataClusterController : IPgDataClusterController
             await commandExecutor.ExecuteAsync(
                 pgctlPath,
                 args,
+                // pg_ctl exits but leaves the server running, holding whatever output handles it inherited.
+                leavesBackgroundProcess: true,
                 cancellationToken: cancellationToken).ConfigureAwait(false);
         }
         catch (PgCommandExecutionException ex)
@@ -281,7 +283,12 @@ internal class PgDataClusterController : IPgDataClusterController
 
         try
         {
-            await commandExecutor.ExecuteAsync(pgctlPath, args, cancellationToken: cancellationToken).ConfigureAwait(false);
+            await commandExecutor.ExecuteAsync(
+                pgctlPath,
+                args,
+                // Like start, this returns with the server left running behind it.
+                leavesBackgroundProcess: true,
+                cancellationToken: cancellationToken).ConfigureAwait(false);
         }
         catch (PgCommandExecutionException ex)
         {

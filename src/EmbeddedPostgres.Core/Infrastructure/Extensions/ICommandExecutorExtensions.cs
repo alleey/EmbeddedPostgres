@@ -34,6 +34,7 @@ public static class ICommandExecutorExtensions
         bool throwOnNonZeroExitCode = true,
         Action<string> outputListener = default,
         Action<string> errorListener = default,
+        bool leavesBackgroundProcess = false,
         CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
@@ -64,6 +65,7 @@ public static class ICommandExecutorExtensions
             throwOnNonZeroExitCode,
             asyncOutputListener,
             asyncErrorListener,
+            leavesBackgroundProcess,
             cancellationToken);
     }
 }

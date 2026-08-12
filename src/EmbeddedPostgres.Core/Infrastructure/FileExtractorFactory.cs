@@ -53,7 +53,8 @@ internal class FileExtractorFactory : IFileExtractorFactory
     /// </exception>
     public IFileExtractor ForExtractionStrategy(string scheme)
     {
-        return scheme.ToLower() switch
+        // An artifact that never had a strategy set falls to the default rather than crashing here.
+        return scheme?.ToLower() switch
         {
             KnownExtractionStrategies.Zonky => zonkyExtractor,
             KnownExtractionStrategies.System => systemFileExtractor,

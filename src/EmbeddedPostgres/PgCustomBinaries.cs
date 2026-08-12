@@ -1,4 +1,5 @@
-﻿using EmbeddedPostgres.Core.Interfaces;
+﻿using EmbeddedPostgres.Constants;
+using EmbeddedPostgres.Core.Interfaces;
 using EmbeddedPostgres.Utils;
 
 namespace EmbeddedPostgres;
@@ -17,7 +18,9 @@ public class PgCustomBinaries
             Kind = PgArtifactKind.Main,
             IsLocal = PathChecker.IsLocalPath(filePathOrUrl),
             Source = filePathOrUrl,
-            ExtractionStrategy = extractionStrategy,
+            // Passing the null through would override PgArtifact's own default and leave the
+            // artifact with no strategy for the extractor factory to resolve.
+            ExtractionStrategy = extractionStrategy ?? KnownExtractionStrategies.Default,
         };
     }
 }
