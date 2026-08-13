@@ -20,8 +20,11 @@ public partial class SqlCommand : EmpgCommandBase
         this.serverFactory = serverFactory;
     }
 
-    [CommandParameter(0, Name = "statement", Description = "SQL to execute. Omit when using --file.")]
+    [CommandParameter(0, Name = "statement", Description = "SQL to execute. Omit when using --sql or --file.")]
     public string? Statement { get; set; }
+
+    [CommandOption("sql", 's', Description = "SQL to execute, as an option instead of the positional statement.")]
+    public string? Sql { get; set; }
 
     [CommandOption("file", 'f', Description = "Execute SQL from this file instead of an inline statement.")]
     public string? File { get; set; }
@@ -39,10 +42,18 @@ public partial class SqlCommand : EmpgCommandBase
     {
         var cancellationToken = console.RegisterCancellationHandler();
 
-        if (string.IsNullOrWhiteSpace(Statement) == string.IsNullOrWhiteSpace(File))
+        var provided = 0;
+        if (!string.IsNullOrWhiteSpace(Statement)) provided++;
+        if (!string.IsNullOrWhiteSpace(Sql)) provided++;
+        if (!string.IsNullOrWhiteSpace(File)) provided++;
+
+        if (provided != 1)
         {
-            throw new EmpgException("Provide either a SQL statement or --file, but not both.");
+            throw new EmpgException(
+                "Provide exactly one of: a positional SQL statement, --sql, or --file.");
         }
+
+        var statement = string.IsNullOrWhiteSpace(Statement) ? Sql : Statement;
 
         if (File is not null && !System.IO.File.Exists(File))
         {
@@ -67,7 +78,7 @@ public partial class SqlCommand : EmpgCommandBase
         }
         else
         {
-            await cluster.ExecuteSqlAsync(Statement!, Database, User, Collect, cancellationToken: cancellationToken).ConfigureAwait(false);
+            await cluster.ExecuteSqlAsync(statement!, Database, User, Collect, cancellationToken: cancellationToken).ConfigureAwait(false);
         }
 
         await output.JsonAsync(new { cluster = entry.Id, database = Database, output = lines }).ConfigureAwait(false);

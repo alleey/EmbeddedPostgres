@@ -30,6 +30,9 @@ public partial class InstanceCreateCommand : InstanceProvisionCommandBase
     [CommandOption("artifact", 'a', Description = "URL or local path of the PostgreSQL binaries.")]
     public string? Artifact { get; set; }
 
+    [CommandOption("pg-version", Description = "PostgreSQL major version to install, for example 18 or 17. Defaults to the newest supported.")]
+    public string? PgVersion { get; set; }
+
     [CommandOption("minimal", 'm', Description = "Use the minimal (Zonky) binaries instead of the standard distribution.")]
     public bool Minimal { get; set; }
 
@@ -45,6 +48,16 @@ public partial class InstanceCreateCommand : InstanceProvisionCommandBase
         if (!string.IsNullOrWhiteSpace(Artifact) && Minimal)
         {
             throw new EmpgException("--artifact names the binaries to install, so --minimal does not also apply.");
+        }
+
+        if (!string.IsNullOrWhiteSpace(PgVersion) && !string.IsNullOrWhiteSpace(Artifact))
+        {
+            throw new EmpgException("--artifact already names the binaries, so --pg-version does not also apply.");
+        }
+
+        if (!string.IsNullOrWhiteSpace(PgVersion) && Minimal)
+        {
+            throw new EmpgException("--pg-version selects a standard distribution build, so --minimal does not also apply.");
         }
     }
 
@@ -94,6 +107,20 @@ public partial class InstanceCreateCommand : InstanceProvisionCommandBase
         if (!string.IsNullOrWhiteSpace(Artifact))
         {
             return PgCustomBinaries.Artifact(Artifact);
+        }
+
+        if (!string.IsNullOrWhiteSpace(PgVersion))
+        {
+            try
+            {
+                return PgStandardBinaries.WebArtifact(PgVersion, PgPlatform.Current);
+            }
+            catch (NotSupportedException ex)
+            {
+                // A mistyped --pg-version is user error, not a crash: surface it the
+                // way the other option validation does, without a stack trace.
+                throw new EmpgException(ex.Message);
+            }
         }
 
         return Minimal ? PgIoZonkyTestBinaries.Latest() : PgStandardBinaries.Latest();

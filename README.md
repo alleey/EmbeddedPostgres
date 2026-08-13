@@ -82,6 +82,28 @@ The registry holds only names and paths, in `EMPG_HOME` or your user application
 Everything describing an instance lives in that instance's own manifest, so losing the registry
 costs you the names, not the data. `empg instance remove` forgets a name and deletes nothing.
 
+### PostgreSQL versions
+
+`instance create` installs the newest supported release by default. Pick another with the major
+version — `--pg-version 17` and `--pg-version 17.0.0` mean the same thing:
+
+```bash
+empg instance create ./lab                      # newest supported (18)
+empg instance create ./lab --pg-version 17      # a specific major
+```
+
+| Major | EnterpriseDB build |
+| --- | --- |
+| 18 | 18.3-1 (default) |
+| 17 | 17.10-2 |
+| 16 | 16.14-1 |
+
+These are the standard EnterpriseDB distributions, Windows x64 and macOS; EnterpriseDB does not
+publish Linux binaries in this form. For anything outside the table — a newer patch build, a Linux
+tarball, a private mirror — pass the archive yourself with `-a/--artifact <url|path>`, which takes
+precedence over `--pg-version`. `-m/--minimal` selects the Zonky test binaries instead and is
+likewise mutually exclusive with `--pg-version`.
+
 Every command accepts the same global options:
 
 | Option | Description |
@@ -107,7 +129,7 @@ Every command accepts the same global options:
 | `empg reload` | Re-read configuration without restarting |
 | `empg cluster add <name>` / `list` / `remove <name>` | Manage data clusters, like `git worktree` |
 | `empg config set <key> <value>` / `get <key>` / `unset <key>` / `list` | Manage `postgresql.conf` parameters, like `git config` |
-| `empg sql [<statement>]` | Execute SQL inline or from a file with `-f` |
+| `empg sql [<statement>]` | Execute SQL inline, as `-s/--sql`, or from a file with `-f` |
 | `empg db list` | List databases in a cluster |
 | `empg dump <target>` / `restore <source>` | Export and import with `pg_dump` / `pg_restore` |
 | `empg archive <target>` | Stop a cluster and archive its data directory |
@@ -125,7 +147,7 @@ Beyond the three global options above:
 | Command | Options |
 | --- | --- |
 | `instance create` / `adopt` | `-n/--name`, `--no-register`, `-c/--cluster`, `-p/--port` (`0` = auto), `--port-start` (5500), `-d/--data-directory`, `-u/--superuser`, `-l/--listen`, `--durable`, `--encoding`, `--locale`, `--bare` |
-| `instance create` only | `-a/--artifact <url\|path>`, `-m/--minimal` (Zonky binaries), `-f/--force` |
+| `instance create` only | `--pg-version <major>` (18, 17, 16), `-a/--artifact <url\|path>`, `-m/--minimal` (Zonky binaries), `-f/--force` |
 | `instance add` | `--use` to also make it active |
 | `instance destroy` | `--purge`, `-m/--mode` (Fast), `-f/--force` |
 | `start` | `-c/--cluster`, `-w/--wait` (on by default), `-t/--timeout` (30s) |
@@ -135,7 +157,7 @@ Beyond the three global options above:
 | `cluster add` | `-p/--port` (omit = auto), `--port-start` (5500), `-d/--data-directory`, `-u/--superuser`, `--host`, `--encoding`, `--locale`, `--no-init` |
 | `cluster remove` | `--keep-data`, `-f/--force` |
 | `config set` / `get` / `unset` / `list` | `-c/--cluster` |
-| `sql` | `-f/--file`, `-c/--cluster`, `-d/--database`, `-u/--user` |
+| `sql` | `-s/--sql`, `-f/--file`, `-c/--cluster`, `-d/--database`, `-u/--user` |
 | `db list` | `-c/--cluster` |
 | `dump` | `-c/--cluster`, `-d/--database`, `-F/--format` p\|c\|d\|t, `--schema-only`, `--data-only`, `-j/--jobs` |
 | `restore` | `-c/--cluster`, `-d/--database`, `-F/--format` c\|d\|t, `--clean`, `--create`, `--exit-on-error`, `-j/--jobs` |
@@ -147,6 +169,29 @@ Beyond the three global options above:
 | `uri` | `-c/--cluster`, `-u/--user`, `-d/--database`, `--host` |
 
 Run `empg <command> --help` for the authoritative list.
+
+### Running SQL
+
+`empg sql` takes its statement three ways, exactly one at a time:
+
+```bash
+empg sql "SELECT version()"                 # positional
+empg sql -s "SELECT version()"              # -s/--sql, the same thing
+empg sql -f schema.sql -d mydb              # a script
+```
+
+Note that `-c` is `--cluster` here, not psql's `--command`; use `-s` if that is the habit you are
+carrying over. Passing more than one of the three, or none, is an error.
+
+Scripts stop at the first failing statement and the command exits non-zero, so a broken migration
+cannot report success. Errors from the server are printed as psql emits them:
+
+```
+$ empg sql -f broken.sql
+psql:broken.sql:1: ERROR:  division by zero
+$ echo $?
+1
+```
 
 ### Using an existing PostgreSQL installation
 

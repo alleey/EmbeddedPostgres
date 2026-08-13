@@ -269,6 +269,13 @@ internal class PgSqlController : IPgSqlController
             List<string> args = [
                 // See above: prompting is never usable from a spawned process.
                 "-w",
+                // Without this psql runs a multi-statement script to the end after a
+                // failure and still exits 0. The stderr carrying the error is only
+                // surfaced below when the process exits non-zero, so a broken script
+                // would report success with the error discarded entirely. Scripts are
+                // the main use of -f here, so stopping at the first error is the only
+                // defensible default.
+                "-v", "ON_ERROR_STOP=1",
                 "-U", string.IsNullOrEmpty(userName) ? dataCluster.Superuser : userName,
                 "-h", dataCluster.Host,
                 "-p", $"{dataCluster.Port}",

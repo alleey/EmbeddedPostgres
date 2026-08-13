@@ -7,7 +7,7 @@ namespace EmbeddedPostgres;
 /// </summary>
 public class PgStandardBinaries
 {
-    private const string PgVersionLatest = "17.0.0";
+    private const string PgVersionLatest = "18.0.0";
 
     /// <summary>
     /// EnterpriseDB serves its binaries under a readable, versioned path, for example
@@ -22,9 +22,13 @@ public class PgStandardBinaries
     /// </summary>
     private static readonly IReadOnlyDictionary<string, string> EdbBuilds = new Dictionary<string, string>
     {
+        ["18.0.0"] = "18.3-1",
         ["17.0.0"] = "17.10-2",
         ["16.0.0"] = "16.14-1",
     };
+
+    /// <summary>The major versions this class can resolve, newest first.</summary>
+    public static IReadOnlyCollection<string> SupportedVersions => EdbBuilds.Keys.ToArray();
 
     /// <summary>
     /// Gets the latest PostgreSQL artifact for the current platform.
@@ -85,8 +89,21 @@ public class PgStandardBinaries
     /// <summary>
     /// Resolves the pinned EnterpriseDB build for the given PostgreSQL version.
     /// </summary>
+    /// <remarks>
+    /// Callers say "18", "18.0" or "18.0.0" and mean the same major release, so the
+    /// lookup is keyed on the major version only. A specific patch build is chosen
+    /// by the table above, or bypassed entirely with a custom artifact URL.
+    /// </remarks>
     private static string ResolveBuild(string pgVersion)
-        => EdbBuilds.TryGetValue(pgVersion, out var build)
-            ? build
-            : throw new NotSupportedException($"Unsupported PostgreSQL version: {pgVersion}");
+    {
+        var major = (pgVersion ?? string.Empty).Split('.')[0];
+        if (EdbBuilds.TryGetValue($"{major}.0.0", out var build))
+        {
+            return build;
+        }
+
+        throw new NotSupportedException(
+            $"Unsupported PostgreSQL version: {pgVersion}. Supported: "
+            + string.Join(", ", EdbBuilds.Keys) + ". Use a custom artifact URL for anything else.");
+    }
 }
