@@ -1,0 +1,113 @@
+// Files empg deletes for PostgreSQL 17 when you run `empg instance trim`.
+//
+// Paths are relative to the instance directory and always use forward slashes.
+// '*' matches within one path segment, '**' matches across directories.
+// A pattern that matches nothing is fine - these lists are shared across builds
+// and platforms, and an absent file is simply not deleted.
+//
+// This is a DELETE list, not a keep list: nothing goes unless it is named here.
+// Add a line to remove more; delete a line to keep something.
+{
+  "major": "17",
+  "delete": [
+
+    // --- Desktop applications. Never loaded by a server. ---------------------
+    "pgAdmin 4/**",
+    "StackBuilder/**",
+    "bin/stackbuilder.exe",
+    "bin/postgisgui/**",
+    "bin/wx*.dll",
+    "lib/wx*",
+
+    // --- Documentation -------------------------------------------------------
+    "doc/**",
+    "docs/**",
+    "share/doc/**",
+    "bin/*.md",
+    "bin/COPYING",
+    "*.txt",
+    "*.md",
+
+    // --- Build-time only: C headers and import libraries ---------------------
+    "include/**",
+    "symbols/**",
+    "bin/*.lib",
+    "lib/*.lib",
+
+    // --- Translated server messages. English still works without them. -------
+    "share/locale/**",
+
+    // --- PROJ datum-shift grids. Needed only for ST_Transform between datums
+    //     that require grid corrections. proj.db (the CRS catalogue) is NOT
+    //     listed and must stay - PROJ will not initialise without it. --------
+    "share/contrib/postgis-*/proj/*.tif",
+    "share/contrib/postgis-*/proj/*.json",
+    "share/contrib/postgis-*/proj/*/**",
+
+    // --- PostGIS install/upgrade scripts, once the extension is created ------
+    "share/contrib/**/uninstall_*.sql",
+    "share/contrib/**/*_upgrade*.sql",
+    "share/contrib/**/*_comments.sql",
+
+    // --- Orphaned configuration for tools nothing here runs ------------------
+    "bin/mapconfig*.xml",
+    "bin/pgtopo_*"
+
+    // ========================================================================
+    // Below are removals that CHANGE WHAT THE SERVER CAN DO. They are left out
+    // by default. Uncomment a block only if you are sure you do not need it.
+    // ========================================================================
+
+    // --- Command-line client tools. Keep psql if anything shells out to it,
+    //     and pg_dump/pg_restore if you use `empg dump` / `empg restore`. ----
+    // "bin/pgbench.exe",
+    // "bin/pg_amcheck.exe",
+    // "bin/pg_basebackup.exe",
+    // "bin/pg_receivewal.exe",
+    // "bin/pg_recvlogical.exe",
+    // "bin/pg_rewind.exe",
+    // "bin/pg_upgrade.exe",
+    // "bin/pg_verifybackup.exe",
+    // "bin/pg_waldump.exe",
+    // "bin/pg_walsummary.exe",
+    // "bin/pg_combinebackup.exe",
+    // "bin/pg_createsubscriber.exe",
+    // "bin/pg_archivecleanup.exe",
+    // "bin/pg_checksums.exe",
+    // "bin/pg_test_*.exe",
+    // "bin/pg_dumpall.exe",
+    // "bin/oid2name.exe",
+    // "bin/vacuumlo.exe",
+    // "bin/vacuumdb.exe",
+    // "bin/reindexdb.exe",
+    // "bin/clusterdb.exe",
+    // "bin/createdb.exe",
+    // "bin/dropdb.exe",
+    // "bin/createuser.exe",
+    // "bin/dropuser.exe",
+    // "bin/ecpg.exe",
+    // "bin/test_cloexec.exe",
+
+    // --- PostGIS raster. Drops GDAL with it (~35 MB). After this,
+    //     CREATE EXTENSION postgis_raster fails. -----------------------------
+    // "lib/postgis_raster*",
+    // "bin/libgdal-*.dll",
+    // "bin/ogr2ogr.exe",
+    // "bin/ogrinfo.exe",
+    // "bin/ogr_fdw_info.exe",
+    // "bin/raster2pgsql.exe",
+    // "gdal-data/**",
+
+    // --- PostGIS SFCGAL (~11 MB). CREATE EXTENSION postgis_sfcgal fails. ----
+    // "lib/postgis_sfcgal*",
+    // "bin/libSFCGAL.dll",
+
+    // --- PostGIS topology. CREATE EXTENSION postgis_topology fails. ---------
+    // "lib/postgis_topology*",
+
+    // --- Shapefile loaders ---------------------------------------------------
+    // "bin/shp2pgsql.exe",
+    // "bin/pgsql2shp.exe",
+    // "bin/osm2pgrouting.exe"
+  ]
+}

@@ -26,6 +26,12 @@
     </None>
   </ItemGroup>
 
+  <!-- Trim lists are data, not code: what a build ships changes every release, so they are
+       files a user can edit rather than lists compiled into the tool. -->
+  <ItemGroup>
+    <EmbeddedResource Include="TrimProfiles\*.json" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="CliFx" Version="3.0.0" />
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.10" />
